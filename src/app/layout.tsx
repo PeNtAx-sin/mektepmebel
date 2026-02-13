@@ -37,7 +37,7 @@ export const metadata: Metadata = {
   ],
 
   openGraph: {
-    title: "Школьная мебель в Алматы | Mektep Mebel",
+    title: "Школьная мебель в Казахстане | Mektep Mebel",
     description: "Парты, стулья и оснащение школ под ключ. Доставка по Казахстану.",
     url: "https://mektepmebel.kz",
     siteName: "MektepMebel.kz",

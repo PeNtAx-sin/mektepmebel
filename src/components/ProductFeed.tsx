@@ -16,7 +16,7 @@ interface Product {
 
 export default function ProductFeed({ products }: { products: Product[] }) {
   const [activeTab, setActiveTab] = useState("all");
-  const PHONE = "77001234567"; // Твой номер
+  const PHONE = "77471719253"; // Твой номер
 
   // Логика фильтрации
   const filteredProducts =
