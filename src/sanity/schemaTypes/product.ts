@@ -42,10 +42,16 @@ export default defineType({
         hotspot: true,
       },
     }),
-    defineField({
+        defineField({
       name: 'price',
-      title: 'Цена (KZT)',
+      title: 'Цена С НДС ',
+      type: 'number',
+    }),
+    defineField({
+      name: 'priceVat',
+      title: 'Цена без НДС (KZT)',
       type: 'number',
     }),
   ],
 })
+
