@@ -16,7 +16,7 @@ export default function Features() {
       ),
     },
     {
-      title: "Металл 2 мм",
+      title: "Металл 1.5 мм",
       desc: "Усиленный каркас мебели",
       icon: (
         <svg fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">

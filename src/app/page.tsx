@@ -15,7 +15,7 @@ interface Product {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   image: any;
   price: number;
-  priceVat?: number; 
+  priceVat: number; 
 }
 
 export default async function Home() {
