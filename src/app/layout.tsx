@@ -26,9 +26,9 @@ export const metadata: Metadata = {
 
   verification: {
     google: "ac3HwWJbcy0OVJLnP_1dXNZl0MRZMjJIiBfhgg-Ve9k",   
-    yandex: "bb532cb4728ed5701",   
+    yandex: "b532cb4728ed5701",   
   },
-  
+
   keywords: [
     "школьная мебель",
     "школьная мебель алматы",
