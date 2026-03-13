@@ -22,6 +22,12 @@ export const metadata: Metadata = {
   },
   
   description: "Качественные школьные парты, стулья и мебель для учебных заведений. Производство и доставка по Алматы и всему Казахстану. Каталог 2026.",
+  // Добавь вот этот блок:
+
+  verification: {
+    google: "ac3HwWJbcy0OVJLnP_1dXNZl0MRZMjJIiBfhgg-Ve9k",   
+    yandex: "bb532cb4728ed5701",   
+  },
   
   keywords: [
     "школьная мебель",
@@ -55,13 +61,7 @@ export const metadata: Metadata = {
 
   icons: {
     icon: "/favicon.ico",
-  },
-  
-  // Сюда добавишь коды, когда зарегистрируешься в Google/Yandex
-  verification: {
-    // google: "...", 
-    // yandex: "...",
-  },
+  }
 };
 
 export default function RootLayout({
