@@ -5,6 +5,8 @@
 import { client } from "@/sanity/lib/client";
 import ProductFeed from "@/components/ProductFeed"; 
 import Features from "@/components/Features"; 
+import StoriesFeed from "@/components/StoriesFeed";
+import CalculatorModal from "@/components/CalculatorModal";
 
 // Тип данных
 interface Product {
@@ -16,6 +18,7 @@ interface Product {
   image: any;
   price: number;
   priceVat: number; 
+  shortDescription?: string; // description field 
 }
 
 export default async function Home() {
@@ -70,12 +73,18 @@ export default async function Home() {
           </div>
         </div>
       </header>
+      
+      <CalculatorModal />
+
 
       {/* Секция преимуществ */}
       <Features />
 
+      <StoriesFeed products={products} />
+
       {/* Каталог товаров */}
       <ProductFeed products={products} />
+
       
     </main>
   );

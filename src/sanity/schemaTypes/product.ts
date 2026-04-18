@@ -52,6 +52,12 @@ export default defineType({
       title: 'Цена без НДС (KZT)',
       type: 'number',
     }),
+    defineField({
+      name: 'shortDescription',
+      title: 'Краткое описание (для карточки товара)',
+      type: 'text', // type 'text' дает удобное многострочное поле
+      rows: 3, 
+    }),
   ],
 })
 

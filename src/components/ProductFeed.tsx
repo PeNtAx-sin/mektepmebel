@@ -12,7 +12,8 @@ interface Product {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   image: any;
   price: number;     
-  priceVat: number;  
+  priceVat: number;
+  shortDescription?: string;  
 }
 
 export default function ProductFeed({ products }: { products: Product[] }) {
@@ -99,6 +100,12 @@ export default function ProductFeed({ products }: { products: Product[] }) {
               )}
             </div>
 
+            {product.shortDescription && (
+              <p className="text-xs text-slate-600 leading-relaxed mb-4">
+                {product.shortDescription}
+              </p>
+            )}
+            
             {/* Кнопка заказа */}
             <a
               href={`https://wa.me/${PHONE}?text=Здравствуйте, интересует ${product.title}`}
