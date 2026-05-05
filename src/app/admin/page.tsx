@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from "recharts";
-import { supabase } from "../../../lib/supabase";
+import { supabase } from "../../lib/supabase";
 
 type SaleItem = { name: string; quantity: number };
 
@@ -252,14 +252,13 @@ export default function AdminDashboard() {
                     <Pie data={debtChartData} innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value">
                       {debtChartData.map((entry, index) => <Cell key={`cell-${index}`} fill={DEBT_COLORS[index % DEBT_COLORS.length]} />)}
                     </Pie>
-                    <Tooltip formatter={(value) => `${value.toLocaleString("ru-RU")} ₸`} />
-                  </PieChart>
+                    <Tooltip formatter={(value: any) => `${Number(value || 0).toLocaleString("ru-RU")} ₸`} />                  </PieChart>
                 ) : (
                   <PieChart>
                     <Pie data={mainChartData} innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value" onClick={(data) => { if(data.name === "В долгах") setShowDebtDetails(true); }} className="cursor-pointer">
                       {mainChartData.map((entry, index) => <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />)}
                     </Pie>
-                    <Tooltip formatter={(value) => `${value.toLocaleString("ru-RU")} ₸`} />
+                    <Tooltip formatter={(value: any) => `${Number(value || 0).toLocaleString("ru-RU")} ₸`} />
                     <Legend wrapperStyle={{ fontWeight: 'black', fontSize: '16px', marginTop: '10px', color: '#111827' }} />
                   </PieChart>
                 )}
