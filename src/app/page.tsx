@@ -1,6 +1,4 @@
-
-
-
+import Link from 'next/link';
 
 import { client } from "@/sanity/lib/client";
 import ProductFeed from "@/components/ProductFeed"; 
@@ -32,7 +30,7 @@ export default async function Home() {
   // Твой номер для WhatsApp
   const PHONE_NUMBER = "77471719253"; 
   const PHONE_DISPLAY = "+7 (747) 171-92-53";
-
+  
   return (
     // Основной фон #f6f8f7ff
     <main className="min-h-screen bg-[#f6f8f7ff] text-slate-800 p-6 md:p-8">
@@ -65,17 +63,27 @@ export default async function Home() {
             </a>
           </div>
           
-          {/* Бейджик с годом (Справа) */}
-          <div className="text-right">
+          {/* Правая часть: Кнопка Входа и Бейджик */}
+          <div className="flex flex-col items-end gap-4 mt-4 md:mt-0">
+            {/* Кнопка входа в Админку */}
+                <a 
+                  href="/admin" 
+                  className="flex items-center gap-2 px-5 py-2.5 bg-slate-800 text-white text-sm font-black tracking-widest uppercase rounded-xl hover:bg-blue-600 active:scale-95 transition-all shadow-md hover:shadow-lg"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                  </svg>
+                  ВХОД
+                </a>
+
             <p className="text-xs font-mono uppercase tracking-widest text-[#047EB2] bg-[#E0F2FE] px-3 py-1 rounded">
               В наличии 2026
             </p>
           </div>
         </div>
       </header>
-      
-      <CalculatorModal />
 
+      <CalculatorModal />
 
       {/* Секция преимуществ */}
       <Features />
@@ -85,7 +93,6 @@ export default async function Home() {
       {/* Каталог товаров */}
       <ProductFeed products={products} />
 
-      
     </main>
   );
 }
