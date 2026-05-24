@@ -434,6 +434,414 @@
 // ------------------------
 
 
+// "use client";
+
+// import { useState, useEffect } from "react";
+// import { supabase } from "@/lib/supabase";
+// import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";
+
+// type SaleItem = { name: string; quantity: number; price?: number | "" };
+
+// type Sale = {
+//   id: number;
+//   company_name: string;
+//   amount: number;
+//   paid_amount: number;
+//   status: string;
+//   sale_date: string;
+//   items: SaleItem[];
+// };
+
+// export default function AdminDashboard() {
+//   const [sales, setSales] = useState<Sale[]>([]);
+//   const [isLoading, setIsLoading] = useState(false);
+//   const [isMounted, setIsMounted] = useState(false);
+
+//   // Табы для мобилки: 'form', 'data', 'third'
+//   const [activeTab, setActiveTab] = useState<'form' | 'data' | 'third'>('form');
+
+//   // Форма
+//   const [companyName, setCompanyName] = useState("");
+//   const [amount, setAmount] = useState("");
+//   const [paidAmount, setPaidAmount] = useState("");
+//   const [status, setStatus] = useState("paid");
+//   const [saleDate, setSaleDate] = useState("");
+//   const [items, setItems] = useState<SaleItem[]>([{ name: "", quantity: 1, price: "" }]);
+
+//   // Графики и фильтры
+//   const [searchTerm, setSearchTerm] = useState("");
+//   const [filterStatus, setFilterStatus] = useState("all"); 
+//   const [sortBy, setSortBy] = useState("date_desc"); 
+
+//   const COLORS = ["#85C78F", "#F2727B"];
+
+//   const fetchSales = async () => {
+//     const { data, error } = await supabase.from("sales").select("*").order("created_at", { ascending: false });
+//     if (!error && data) setSales(data);
+//   };
+
+//   useEffect(() => {
+//     setIsMounted(true);
+//     fetchSales();
+//   }, []);
+
+//   // Автоматический подсчет суммы при изменении позиций
+//   useEffect(() => {
+//     // Проверяем, есть ли хотя бы у одной позиции введенная цена
+//     const hasAnyPrice = items.some(item => item.price !== undefined && item.price !== "");
+    
+//     if (hasAnyPrice) {
+//       const calculatedTotal = items.reduce((sum, item) => {
+//         const itemPrice = Number(item.price) || 0;
+//         const itemQty = Number(item.quantity) || 0;
+//         return sum + (itemPrice * itemQty);
+//       }, 0);
+//       setAmount(calculatedTotal.toString());
+//     }
+//   }, [items]); // Эффект срабатывает только при изменении массива items
+
+//   const handleAddItem = () => setItems([...items, { name: "", quantity: 1, price: "" }]);
+  
+//   const handleItemChange = (index: number, field: string, value: string | number) => {
+//     const newItems = [...items];
+//     newItems[index] = { ...newItems[index], [field]: value };
+//     setItems(newItems);
+//   };
+  
+//   const handleRemoveItem = (index: number) => {
+//     setItems(items.filter((_, i) => i !== index));
+//   };
+
+//   const handleAddSale = async (e: React.FormEvent) => {
+//     e.preventDefault();
+//     setIsLoading(true);
+
+//     const totalAmount = Number(amount);
+//     let finalPaid = 0;
+    
+//     if (status === "paid") finalPaid = totalAmount;
+//     if (status === "debt") finalPaid = 0;
+//     if (status === "partial") finalPaid = Number(paidAmount);
+
+//     const { error } = await supabase.from("sales").insert([
+//       {
+//         company_name: companyName,
+//         amount: totalAmount,
+//         paid_amount: finalPaid,
+//         status: status,
+//         sale_date: saleDate,
+//         items: items,
+//       },
+//     ]);
+
+//     if (!error) {
+//       setCompanyName(""); setAmount(""); setPaidAmount(""); setStatus("paid"); setSaleDate("");
+//       setItems([{ name: "", quantity: 1, price: "" }]);
+//       fetchSales();
+//       setActiveTab('data');
+//     } else {
+//       console.error(error);
+//       alert("Ошибка: " + error.message);
+//     }
+//     setIsLoading(false);
+//   };
+
+//   const handleDelete = async (id: number) => {
+//     if (confirm("Вы уверены, что хотите удалить эту запись?")) {
+//       await supabase.from("sales").delete().eq("id", id);
+//       fetchSales();
+//     }
+//   };
+
+//   const handleStatusChange = async (id: number, newStatus: string, totalAmount: number, currentPaid: number) => {
+//     let newPaid = currentPaid;
+//     if (newStatus === "paid") newPaid = totalAmount;
+//     if (newStatus === "debt") newPaid = 0;
+//     if (newStatus === "partial") {
+//       const userInput = prompt(`Общая сумма ${totalAmount} ₸. Сколько уже оплачено?`, currentPaid.toString());
+//       if (userInput === null) return; 
+//       newPaid = Number(userInput);
+//     }
+//     await supabase.from("sales").update({ status: newStatus, paid_amount: newPaid }).eq("id", id);
+//     fetchSales();
+//   };
+
+//   let processedSales = [...sales];
+//   if (searchTerm) {
+//     processedSales = processedSales.filter(sale => sale.company_name.toLowerCase().includes(searchTerm.toLowerCase()));
+//   }
+//   if (filterStatus === "debtors") {
+//     processedSales = processedSales.filter(sale => sale.status === "debt" || sale.status === "partial");
+//   }
+
+//   processedSales.sort((a, b) => {
+//     if (sortBy === "date_desc") return new Date(b.sale_date).getTime() - new Date(a.sale_date).getTime();
+//     if (sortBy === "date_asc") return new Date(a.sale_date).getTime() - new Date(b.sale_date).getTime();
+//     if (sortBy === "amount_desc") return b.amount - a.amount;
+//     if (sortBy === "amount_asc") return a.amount - b.amount;
+//     return 0;
+//   });
+
+//   const totalRevenue = sales.reduce((acc, sale) => acc + Number(sale.paid_amount), 0);
+//   const totalDebt = sales.reduce((acc, sale) => acc + (Number(sale.amount) - Number(sale.paid_amount)), 0);
+//   const totalExpected = totalRevenue + totalDebt;
+//   const hasData = totalRevenue > 0 || totalDebt > 0;
+
+//   const paidPercentage = totalExpected > 0 ? (totalRevenue / totalExpected) * 100 : 0;
+//   const debtPercentage = totalExpected > 0 ? (totalDebt / totalExpected) * 100 : 0;
+
+//   const mainChartData = [
+//     { name: "Получено", value: totalRevenue },
+//     { name: "К получению (Долг)", value: totalDebt },
+//   ];
+
+//   const customTooltipFormatter = (value: any, name: any) => [`${Number(value || 0).toLocaleString("ru-RU")} ₸`, name];
+
+//   // ================= РЕНДЕР КОМПОНЕНТОВ =================
+
+//   const renderForm = () => (
+//     <div className="bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-slate-100">
+//       <h2 className="text-xl font-semibold text-slate-800 mb-6">Новая реализация</h2>
+//       <form onSubmit={handleAddSale} className="space-y-6">
+//         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+//           <div className="flex flex-col gap-1.5">
+//             <label className="text-sm font-medium text-slate-500">Организация / БИН</label>
+//             <input required value={companyName} onChange={(e) => setCompanyName(e.target.value)} type="text" placeholder="ТОО / ИП / Школа" 
+//               className="w-full px-4 py-3 text-base text-slate-800 placeholder:text-slate-400 border border-slate-200 rounded-xl focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 outline-none transition-all" />
+//           </div>
+//           <div className="flex flex-col gap-1.5">
+//             <label className="text-sm font-medium text-slate-500">Дата отгрузки</label>
+//             <input required value={saleDate} onChange={(e) => setSaleDate(e.target.value)} type="date" 
+//               className="w-full px-4 py-3 text-base text-slate-800 border border-slate-200 rounded-xl focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 outline-none transition-all" />
+//           </div>
+//         </div>
+
+//         <div className="bg-slate-50 p-5 rounded-xl border border-slate-100 space-y-4">
+//           <label className="text-sm font-medium text-slate-600 block mb-2">Проданные позиции</label>
+//           {items.map((item, index) => (
+//             <div key={index} className="flex flex-col xl:flex-row gap-3">
+//               <input required value={item.name} onChange={(e) => handleItemChange(index, "name", e.target.value)} type="text" placeholder="Название товара" 
+//                 className="flex-1 px-4 py-3 text-base text-slate-800 placeholder:text-slate-400 border border-slate-200 rounded-xl focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 outline-none bg-white min-w-0" />
+              
+//               <div className="flex gap-2 w-full xl:w-auto">
+//                 <input value={item.price} onChange={(e) => handleItemChange(index, "price", e.target.value)} type="number" min="0" placeholder="Цена (опц.)" 
+//                   className="w-full xl:w-32 px-4 py-3 text-base text-slate-800 placeholder:text-slate-400 border border-slate-200 rounded-xl focus:border-indigo-400 outline-none bg-white min-w-0" />
+                
+//                 <input required value={item.quantity} onChange={(e) => handleItemChange(index, "quantity", Number(e.target.value))} type="number" min="1" placeholder="Шт." 
+//                   className="w-20 xl:w-24 px-4 py-3 text-base text-slate-800 border border-slate-200 rounded-xl text-center focus:border-indigo-400 outline-none bg-white min-w-0" />
+                
+//                 {items.length > 1 && (
+//                   <button type="button" onClick={() => handleRemoveItem(index)} className="px-3 py-3 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors">✕</button>
+//                 )}
+//               </div>
+//             </div>
+//           ))}
+//           <button type="button" onClick={handleAddItem} className="text-sm text-indigo-600 font-medium hover:text-indigo-800 transition-colors mt-2">
+//             + Добавить позицию
+//           </button>
+//         </div>
+
+//         <div className="grid grid-cols-1 md:grid-cols-3 gap-5 border-t border-slate-100 pt-6">
+//           <div className="flex flex-col gap-1.5">
+//             <label className="text-sm font-medium text-slate-500">Итоговая сумма (₸)</label>
+//             <input required value={amount} onChange={(e) => setAmount(e.target.value)} type="number" placeholder="0" 
+//               className="w-full px-4 py-3 text-lg font-semibold text-slate-800 border border-slate-200 rounded-xl focus:border-indigo-400 outline-none transition-colors" />
+//           </div>
+          
+//           <div className="flex flex-col gap-1.5 md:col-span-1">
+//             <label className="text-sm font-medium text-slate-500">Статус оплаты</label>
+//             <select value={status} onChange={(e) => setStatus(e.target.value)} 
+//               className="w-full px-4 py-3 text-base text-slate-800 border border-slate-200 rounded-xl focus:border-indigo-400 outline-none bg-white cursor-pointer">
+//               <option value="paid">✅ Оплачено полностью</option>
+//               <option value="partial">⏳ Частично оплачено</option>
+//               <option value="debt">❌ В долг (без оплаты)</option>
+//             </select>
+//           </div>
+
+//           {status === "partial" && (
+//             <div className="flex flex-col gap-1.5">
+//               <label className="text-sm font-medium text-orange-500">Сколько внесли (₸)</label>
+//               <input required value={paidAmount} onChange={(e) => setPaidAmount(e.target.value)} type="number" placeholder="0" 
+//                 className="w-full px-4 py-3 text-lg font-semibold text-orange-800 border border-orange-200 bg-orange-50 rounded-xl focus:border-orange-400 outline-none" />
+//             </div>
+//           )}
+//         </div>
+
+//         <div className="flex justify-end pt-4">
+//           <button disabled={isLoading} type="submit" className="w-full md:w-auto px-8 py-3 text-base font-medium bg-[#6672E5] text-white rounded-xl shadow-sm hover:bg-[#5560c9] transition-all disabled:opacity-50">
+//             {isLoading ? "Сохранение..." : "Сохранить заказ"}
+//           </button>
+//         </div>
+//       </form>
+//     </div>
+//   );
+
+//   const renderDataAndCharts = () => (
+//     <div className="space-y-6">
+//       <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+//         <h3 className="text-sm font-medium text-slate-500 mb-1">Общая ожидаемая сумма</h3>
+//         <p className="text-2xl font-semibold text-slate-800 mb-6">{totalExpected.toLocaleString("ru-RU")} ₸</p>
+        
+//         <div className="w-full h-3 rounded-full flex overflow-hidden mb-4 bg-slate-100">
+//           <div style={{ width: `${paidPercentage}%`, backgroundColor: COLORS[0] }} className="h-full transition-all duration-500" />
+//           <div style={{ width: `${debtPercentage}%`, backgroundColor: COLORS[1] }} className="h-full transition-all duration-500" />
+//         </div>
+
+//         <div className="flex justify-between items-center text-sm">
+//           <div>
+//             <p className="text-slate-400 mb-1">Получено</p>
+//             <p className="font-semibold" style={{ color: COLORS[0] }}>{totalRevenue.toLocaleString("ru-RU")} ₸</p>
+//           </div>
+//           <div className="text-right">
+//             <p className="text-slate-400 mb-1">К получению (Долг)</p>
+//             <p className="font-semibold" style={{ color: COLORS[1] }}>{totalDebt.toLocaleString("ru-RU")} ₸</p>
+//           </div>
+//         </div>
+
+//         <div className="h-48 w-full mt-6">
+//           {!isMounted ? null : hasData ? (
+//              <ResponsiveContainer width="100%" height="100%">
+//                <PieChart>
+//                  <Pie data={mainChartData} innerRadius={50} outerRadius={70} paddingAngle={2} dataKey="value">
+//                    {mainChartData.map((entry, index) => <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />)}
+//                  </Pie>
+//                  <Tooltip formatter={customTooltipFormatter} contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
+//                </PieChart>
+//              </ResponsiveContainer>
+//           ) : (
+//             <div className="h-full flex items-center justify-center text-slate-400 text-sm">Нет данных</div>
+//           )}
+//         </div>
+//       </div>
+
+//       <div className="flex flex-col sm:flex-row gap-3">
+//         <input type="text" placeholder="Поиск компании..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)}
+//           className="flex-1 px-4 py-2.5 text-sm text-slate-800 placeholder:text-slate-400 border border-slate-200 rounded-xl focus:border-indigo-400 outline-none bg-white" />
+//         <div className="flex gap-3">
+//           <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)} className="px-4 py-2.5 text-sm text-slate-700 border border-slate-200 rounded-xl outline-none bg-white">
+//             <option value="all">Все статусы</option>
+//             <option value="debtors">Только должники</option>
+//           </select>
+//           <select value={sortBy} onChange={(e) => setSortBy(e.target.value)} className="px-4 py-2.5 text-sm text-slate-700 border border-slate-200 rounded-xl outline-none bg-white">
+//             <option value="date_desc">Новые</option>
+//             <option value="amount_desc">Сумма</option>
+//           </select>
+//         </div>
+//       </div>
+
+//       <div className="space-y-4">
+//         {processedSales.map((sale) => {
+//           const debt = Number(sale.amount) - Number(sale.paid_amount);
+//           return (
+//             <div key={sale.id} className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex flex-col gap-4">
+//               <div className="flex justify-between items-start">
+//                 <div>
+//                   <h3 className="font-semibold text-lg text-slate-800">{sale.company_name}</h3>
+//                   <span className="text-xs text-slate-400">{new Date(sale.sale_date).toLocaleDateString('ru-RU')}</span>
+//                 </div>
+//                 <div className="text-right">
+//                   <div className="font-semibold text-slate-800">{sale.amount.toLocaleString("ru-RU")} ₸</div>
+//                   {sale.status !== 'paid' && (
+//                     <div className="text-xs font-medium mt-1 text-[#F2727B]">Долг: {debt.toLocaleString("ru-RU")} ₸</div>
+//                   )}
+//                 </div>
+//               </div>
+
+//               <div className="text-sm text-slate-600 bg-slate-50 px-4 py-3 rounded-xl">
+//                 {sale.items.map((item, idx) => (
+//                   <div key={idx} className="flex justify-between mb-1 last:mb-0 items-center">
+//                     <span className="font-medium">{item.name}</span>
+//                     <div className="flex gap-3 text-slate-400 text-xs">
+//                       {item.price && <span>{Number(item.price).toLocaleString("ru-RU")} ₸</span>}
+//                       <span>x{item.quantity}</span>
+//                     </div>
+//                   </div>
+//                 ))}
+//               </div>
+
+//               <div className="flex justify-between items-center pt-2 border-t border-slate-50">
+//                  <select value={sale.status} onChange={(e) => handleStatusChange(sale.id, e.target.value, sale.amount, sale.paid_amount)}
+//                     className={`text-sm py-1.5 px-3 rounded-lg border outline-none cursor-pointer font-medium
+//                       ${sale.status === 'paid' ? 'bg-[#85C78F]/10 text-[#55945e] border-[#85C78F]/30' : ''}
+//                       ${sale.status === 'partial' ? 'bg-orange-50 text-orange-600 border-orange-200' : ''}
+//                       ${sale.status === 'debt' ? 'bg-[#F2727B]/10 text-[#d15059] border-[#F2727B]/30' : ''}
+//                     `}>
+//                     <option value="paid">Оплачено</option>
+//                     <option value="partial">Частично</option>
+//                     <option value="debt">В долг</option>
+//                   </select>
+//                   <button onClick={() => handleDelete(sale.id)} className="text-xs text-slate-400 hover:text-red-500 transition-colors">
+//                      Удалить
+//                   </button>
+//               </div>
+//             </div>
+//           );
+//         })}
+//       </div>
+//     </div>
+//   );
+
+//   return (
+//     <div className="min-h-screen bg-[#F8F9FB] text-slate-800 font-sans pb-24 lg:pb-8 flex">
+//       <div className="hidden lg:flex w-64 flex-col bg-[#F0F3F7] border-r border-slate-200 fixed h-full left-0 top-0">
+//         <div className="p-6">
+//           <h1 className="text-xl font-bold text-slate-800 tracking-tight">CRM</h1>
+//         </div>
+//         <nav className="flex-1 px-4 space-y-2">
+//           <button onClick={() => setActiveTab('form')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors ${activeTab === 'form' ? 'bg-white text-[#6672E5] shadow-sm' : 'text-slate-500 hover:bg-slate-200/50'}`}>
+//             <span className="text-lg">📝</span> Ввод данных
+//           </button>
+//           <button onClick={() => setActiveTab('data')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors ${activeTab === 'data' ? 'bg-white text-[#6672E5] shadow-sm' : 'text-slate-500 hover:bg-slate-200/50'}`}>
+//             <span className="text-lg">📊</span> Финансы и база
+//           </button>
+//           <button onClick={() => setActiveTab('third')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors ${activeTab === 'third' ? 'bg-white text-[#6672E5] shadow-sm' : 'text-slate-500 hover:bg-slate-200/50'}`}>
+//             <span className="text-lg">⚙️</span> Настройки
+//           </button>
+//         </nav>
+//       </div>
+
+//       <div className="flex-1 lg:ml-64 p-4 md:p-8 max-w-5xl mx-auto w-full">
+//         <div className="flex items-center justify-between mb-8 lg:hidden">
+//           <h1 className="text-2xl font-bold text-slate-800">CRM</h1>
+//           <a href="/" className="text-sm text-[#6672E5] font-medium">На сайт →</a>
+//         </div>
+
+//         <div className="hidden lg:flex justify-end mb-8">
+//             <a href="/" className="px-4 py-2 bg-white border border-slate-200 text-slate-600 rounded-lg text-sm font-medium hover:bg-slate-50 transition-colors">На сайт →</a>
+//         </div>
+
+//         {activeTab === 'form' && renderForm()}
+//         {activeTab === 'data' && renderDataAndCharts()}
+//         {activeTab === 'third' && (
+//           <div className="bg-white p-8 rounded-2xl shadow-sm border border-slate-100 text-center">
+//             <p className="text-slate-500">Здесь можно разместить профиль, настройки доступа или экспорт отчетов.</p>
+//           </div>
+//         )}
+//       </div>
+
+//       <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-100 flex justify-around shadow-[0_-4px_20px_-10px_rgba(0,0,0,0.1)] z-50 px-2 pb-safe pt-2">
+//         <button onClick={() => setActiveTab('form')} className={`flex flex-col items-center p-2 min-w-[80px] transition-colors ${activeTab === 'form' ? 'text-[#6672E5]' : 'text-slate-400'}`}>
+//           <span className="text-xl mb-1">📝</span>
+//           <span className="text-[10px] font-medium">Ввод</span>
+//         </button>
+//         <button onClick={() => setActiveTab('data')} className={`flex flex-col items-center p-2 min-w-[80px] transition-colors ${activeTab === 'data' ? 'text-[#6672E5]' : 'text-slate-400'}`}>
+//           <span className="text-xl mb-1">📊</span>
+//           <span className="text-[10px] font-medium">База</span>
+//         </button>
+//         <button onClick={() => setActiveTab('third')} className={`flex flex-col items-center p-2 min-w-[80px] transition-colors ${activeTab === 'third' ? 'text-[#6672E5]' : 'text-slate-400'}`}>
+//           <span className="text-xl mb-1">⚙️</span>
+//           <span className="text-[10px] font-medium">Настройки</span>
+//         </button>
+//       </div>
+//     </div>
+//   );
+// }
+
+
+
+// -------------------
+// Update 3 
+
 "use client";
 
 import { useState, useEffect } from "react";
@@ -448,8 +856,11 @@ type Sale = {
   amount: number;
   paid_amount: number;
   status: string;
+  payment_method: string;
   sale_date: string;
   items: SaleItem[];
+  created_at: string;
+  updated_at: string; 
 };
 
 export default function AdminDashboard() {
@@ -457,7 +868,6 @@ export default function AdminDashboard() {
   const [isLoading, setIsLoading] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
 
-  // Табы для мобилки: 'form', 'data', 'third'
   const [activeTab, setActiveTab] = useState<'form' | 'data' | 'third'>('form');
 
   // Форма
@@ -465,10 +875,10 @@ export default function AdminDashboard() {
   const [amount, setAmount] = useState("");
   const [paidAmount, setPaidAmount] = useState("");
   const [status, setStatus] = useState("paid");
+  const [paymentMethod, setPaymentMethod] = useState("invoice"); 
   const [saleDate, setSaleDate] = useState("");
   const [items, setItems] = useState<SaleItem[]>([{ name: "", quantity: 1, price: "" }]);
 
-  // Графики и фильтры
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("all"); 
   const [sortBy, setSortBy] = useState("date_desc"); 
@@ -485,11 +895,8 @@ export default function AdminDashboard() {
     fetchSales();
   }, []);
 
-  // Автоматический подсчет суммы при изменении позиций
   useEffect(() => {
-    // Проверяем, есть ли хотя бы у одной позиции введенная цена
     const hasAnyPrice = items.some(item => item.price !== undefined && item.price !== "");
-    
     if (hasAnyPrice) {
       const calculatedTotal = items.reduce((sum, item) => {
         const itemPrice = Number(item.price) || 0;
@@ -498,7 +905,7 @@ export default function AdminDashboard() {
       }, 0);
       setAmount(calculatedTotal.toString());
     }
-  }, [items]); // Эффект срабатывает только при изменении массива items
+  }, [items]);
 
   const handleAddItem = () => setItems([...items, { name: "", quantity: 1, price: "" }]);
   
@@ -529,13 +936,15 @@ export default function AdminDashboard() {
         amount: totalAmount,
         paid_amount: finalPaid,
         status: status,
+        payment_method: paymentMethod, 
         sale_date: saleDate,
         items: items,
+        updated_at: new Date().toISOString(), 
       },
     ]);
 
     if (!error) {
-      setCompanyName(""); setAmount(""); setPaidAmount(""); setStatus("paid"); setSaleDate("");
+      setCompanyName(""); setAmount(""); setPaidAmount(""); setStatus("paid"); setPaymentMethod("invoice"); setSaleDate("");
       setItems([{ name: "", quantity: 1, price: "" }]);
       fetchSales();
       setActiveTab('data');
@@ -562,7 +971,23 @@ export default function AdminDashboard() {
       if (userInput === null) return; 
       newPaid = Number(userInput);
     }
-    await supabase.from("sales").update({ status: newStatus, paid_amount: newPaid }).eq("id", id);
+    
+    await supabase.from("sales").update({ 
+      status: newStatus, 
+      paid_amount: newPaid,
+      updated_at: new Date().toISOString() 
+    }).eq("id", id);
+    
+    fetchSales();
+  };
+
+  // НОВАЯ ФУНКЦИЯ: Изменение способа оплаты
+  const handlePaymentMethodChange = async (id: number, newMethod: string) => {
+    await supabase.from("sales").update({ 
+      payment_method: newMethod,
+      updated_at: new Date().toISOString() 
+    }).eq("id", id);
+    
     fetchSales();
   };
 
@@ -641,26 +1066,35 @@ export default function AdminDashboard() {
           </button>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-5 border-t border-slate-100 pt-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 border-t border-slate-100 pt-6">
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium text-slate-500">Итоговая сумма (₸)</label>
+            <label className="text-sm font-medium text-slate-500">Итого (₸)</label>
             <input required value={amount} onChange={(e) => setAmount(e.target.value)} type="number" placeholder="0" 
               className="w-full px-4 py-3 text-lg font-semibold text-slate-800 border border-slate-200 rounded-xl focus:border-indigo-400 outline-none transition-colors" />
           </div>
           
-          <div className="flex flex-col gap-1.5 md:col-span-1">
-            <label className="text-sm font-medium text-slate-500">Статус оплаты</label>
+          <div className="flex flex-col gap-1.5">
+            <label className="text-sm font-medium text-slate-500">Способ оплаты</label>
+            <select value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)} 
+              className="w-full px-4 py-3 text-base text-slate-800 border border-slate-200 rounded-xl focus:border-indigo-400 outline-none bg-white cursor-pointer">
+              <option value="invoice">📄 По счёту</option>
+              <option value="cash">💵 Наличными</option>
+            </select>
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <label className="text-sm font-medium text-slate-500">Статус</label>
             <select value={status} onChange={(e) => setStatus(e.target.value)} 
               className="w-full px-4 py-3 text-base text-slate-800 border border-slate-200 rounded-xl focus:border-indigo-400 outline-none bg-white cursor-pointer">
-              <option value="paid">✅ Оплачено полностью</option>
-              <option value="partial">⏳ Частично оплачено</option>
-              <option value="debt">❌ В долг (без оплаты)</option>
+              <option value="paid">✅ Оплачено</option>
+              <option value="partial">⏳ Частично</option>
+              <option value="debt">❌ В долг</option>
             </select>
           </div>
 
           {status === "partial" && (
             <div className="flex flex-col gap-1.5">
-              <label className="text-sm font-medium text-orange-500">Сколько внесли (₸)</label>
+              <label className="text-sm font-medium text-orange-500">Внесли (₸)</label>
               <input required value={paidAmount} onChange={(e) => setPaidAmount(e.target.value)} type="number" placeholder="0" 
                 className="w-full px-4 py-3 text-lg font-semibold text-orange-800 border border-orange-200 bg-orange-50 rounded-xl focus:border-orange-400 outline-none" />
             </div>
@@ -732,12 +1166,31 @@ export default function AdminDashboard() {
       <div className="space-y-4">
         {processedSales.map((sale) => {
           const debt = Number(sale.amount) - Number(sale.paid_amount);
+          
+          const createdStr = sale.created_at ? new Date(sale.created_at).toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute:'2-digit' }) : '';
+          const updatedStr = sale.updated_at ? new Date(sale.updated_at).toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute:'2-digit' }) : '';
+
           return (
             <div key={sale.id} className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex flex-col gap-4">
               <div className="flex justify-between items-start">
                 <div>
                   <h3 className="font-semibold text-lg text-slate-800">{sale.company_name}</h3>
-                  <span className="text-xs text-slate-400">{new Date(sale.sale_date).toLocaleDateString('ru-RU')}</span>
+                  <div className="flex items-center gap-2 mt-1">
+                    <span className="text-xs text-slate-400">Отгрузка: {new Date(sale.sale_date).toLocaleDateString('ru-RU')}</span>
+                    
+                    {/* ИНТЕРАКТИВНЫЙ БЕЙДЖ С ВЫБОРОМ СПОСОБА ОПЛАТЫ */}
+                    <select 
+                      value={sale.payment_method || 'invoice'} 
+                      onChange={(e) => handlePaymentMethodChange(sale.id, e.target.value)}
+                      className={`text-[10px] font-semibold tracking-wide uppercase px-2 py-0.5 rounded-md outline-none cursor-pointer border-none
+                        ${sale.payment_method === 'cash' ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200' : 'bg-blue-100 text-blue-700 hover:bg-blue-200'}
+                      `}
+                    >
+                      <option value="invoice">ПО СЧЁТУ</option>
+                      <option value="cash">НАЛИЧНЫЕ</option>
+                    </select>
+
+                  </div>
                 </div>
                 <div className="text-right">
                   <div className="font-semibold text-slate-800">{sale.amount.toLocaleString("ru-RU")} ₸</div>
@@ -759,20 +1212,27 @@ export default function AdminDashboard() {
                 ))}
               </div>
 
-              <div className="flex justify-between items-center pt-2 border-t border-slate-50">
-                 <select value={sale.status} onChange={(e) => handleStatusChange(sale.id, e.target.value, sale.amount, sale.paid_amount)}
-                    className={`text-sm py-1.5 px-3 rounded-lg border outline-none cursor-pointer font-medium
-                      ${sale.status === 'paid' ? 'bg-[#85C78F]/10 text-[#55945e] border-[#85C78F]/30' : ''}
-                      ${sale.status === 'partial' ? 'bg-orange-50 text-orange-600 border-orange-200' : ''}
-                      ${sale.status === 'debt' ? 'bg-[#F2727B]/10 text-[#d15059] border-[#F2727B]/30' : ''}
-                    `}>
-                    <option value="paid">Оплачено</option>
-                    <option value="partial">Частично</option>
-                    <option value="debt">В долг</option>
-                  </select>
-                  <button onClick={() => handleDelete(sale.id)} className="text-xs text-slate-400 hover:text-red-500 transition-colors">
-                     Удалить
-                  </button>
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-3 pt-2 border-t border-slate-50">
+                <div className="flex flex-col text-[10px] text-slate-400">
+                  {createdStr && <span>Добавлен: {createdStr}</span>}
+                  {updatedStr && updatedStr !== createdStr && <span>Изменен: {updatedStr}</span>}
+                </div>
+                
+                <div className="flex items-center gap-3 w-full sm:w-auto">
+                   <select value={sale.status} onChange={(e) => handleStatusChange(sale.id, e.target.value, sale.amount, sale.paid_amount)}
+                      className={`text-sm py-1.5 px-3 rounded-lg border outline-none cursor-pointer font-medium flex-1 sm:flex-none
+                        ${sale.status === 'paid' ? 'bg-[#85C78F]/10 text-[#55945e] border-[#85C78F]/30' : ''}
+                        ${sale.status === 'partial' ? 'bg-orange-50 text-orange-600 border-orange-200' : ''}
+                        ${sale.status === 'debt' ? 'bg-[#F2727B]/10 text-[#d15059] border-[#F2727B]/30' : ''}
+                      `}>
+                      <option value="paid">Оплачено</option>
+                      <option value="partial">Частично</option>
+                      <option value="debt">В долг</option>
+                    </select>
+                    <button onClick={() => handleDelete(sale.id)} className="text-xs font-medium text-slate-400 hover:text-red-500 transition-colors">
+                       Удалить
+                    </button>
+                </div>
               </div>
             </div>
           );
