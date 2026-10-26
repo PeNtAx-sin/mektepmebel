@@ -1,0 +1,82 @@
+import Link from "next/link";
+import { catalogMenu, mainNav, site } from "@/lib/site";
+
+export default function Footer() {
+  const year = new Date().getFullYear();
+
+  return (
+    <footer className="bg-slate-900 text-slate-400 py-12 border-t border-slate-800">
+      <div className="max-w-7xl mx-auto px-4 sm:px-8 grid grid-cols-1 md:grid-cols-4 gap-8 text-sm mb-12">
+        <div className="space-y-4">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 bg-school-blue rounded-xl flex items-center justify-center text-white">
+              <i className="fa-solid fa-graduation-cap" />
+            </div>
+            <span className="text-lg font-black text-white uppercase">{site.name}</span>
+          </div>
+          <p className="text-xs text-slate-400 leading-relaxed">
+            Надежный поставщик школьной мебели в Казахстане. ГОСТ, сертификаты, гарантия и
+            тендерное сопровождение.
+          </p>
+        </div>
+
+        <div>
+          <h4 className="font-bold text-white mb-4">Каталог</h4>
+          <ul className="space-y-2 text-xs">
+            {catalogMenu.map((item) => (
+              <li key={item.href}>
+                <Link href={item.href} className="hover:text-white transition">
+                  {item.title}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        <div>
+          <h4 className="font-bold text-white mb-4">Компания</h4>
+          <ul className="space-y-2 text-xs">
+            {mainNav.slice(1).map((item) => (
+              <li key={item.href}>
+                <Link href={item.href} className="hover:text-white transition">
+                  {item.title}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        <div>
+          <h4 className="font-bold text-white mb-4">Контакты</h4>
+          <div className="space-y-2 text-xs">
+            <p>
+              <i className="fa-solid fa-phone text-brand-500 mr-2" />
+              <a href={site.phoneHref} className="hover:text-white transition">
+                {site.phone}
+              </a>
+            </p>
+            <p>
+              <i className="fa-solid fa-envelope text-brand-500 mr-2" />
+              <a href={`mailto:${site.email}`} className="hover:text-white transition">
+                {site.email}
+              </a>
+            </p>
+            <p>
+              <i className="fa-solid fa-location-dot text-brand-500 mr-2" />
+              {site.address}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-8 border-t border-slate-800 pt-8 flex flex-col sm:flex-row justify-between items-center text-xs text-slate-500">
+        <p>© {year} {site.name}. Все права защищены.</p>
+        <div className="flex gap-4 mt-4 sm:mt-0">
+          <Link href="/admin" rel="nofollow" className="hover:text-white">
+            Панель управления (CRM)
+          </Link>
+        </div>
+      </div>
+    </footer>
+  );
+}

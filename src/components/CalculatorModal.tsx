@@ -139,148 +139,221 @@ export default function CalculatorModal() {
     document.body.removeChild(link);
   };
 
-  return (
+    return (
     <>
-      <button 
+      {/* Плавающая кнопка */}
+      <button
+        type="button"
         onClick={() => setIsOpen(true)}
-        className="fixed top-24 right-4 md:top-28 md:right-8 bg-[#047EB2] text-white p-4 rounded-full shadow-[0_8px_30px_rgb(4,126,178,0.4)] hover:bg-[#1D4ED8] hover:scale-105 transition-all z-[60] group"
+        aria-label="Открыть калькулятор комплектующих"
+        className="fixed bottom-6 right-6 z-[60] group flex items-center gap-3 bg-slate-900 hover:bg-slate-800 text-white p-2 md:pr-5 rounded-full shadow-2xl border border-slate-700 transition"
       >
-        <svg fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-8 h-8 md:w-10 md:h-10">
-          <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-          <path strokeLinecap="round" strokeLinejoin="round" d="M3 9h18M9 21V9" />
-        </svg>
-        <span className="absolute right-16 top-1/2 -translate-y-1/2 bg-gray-900 text-white text-xs px-3 py-2 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap hidden md:block">
+        <span className="w-12 h-12 rounded-full bg-brand-500 group-hover:bg-brand-600 flex items-center justify-center text-xl transition">
+          <i className="fa-solid fa-calculator" />
+        </span>
+        <span className="hidden md:block text-left leading-tight">
+          <span className="block text-sm font-bold">Калькулятор</span>
+          <span className="block text-[11px] text-slate-400">
+            комплектующих для парт
+          </span>
         </span>
       </button>
 
       {isOpen && (
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[70] flex items-center justify-center p-4">
-          
-          <div className="bg-white w-full max-w-4xl max-h-[95vh] rounded-2xl shadow-2xl flex flex-col relative overflow-hidden font-sans">
-            
-            <button 
-              onClick={() => setIsOpen(false)}
-              className="absolute top-4 right-4 text-gray-400 hover:text-red-500 bg-gray-50 hover:bg-red-50 p-2 rounded-full transition-colors z-10"
-            >
-              <svg fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
+        <div
+          className="fixed inset-0 z-[70] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4"
+          onClick={() => setIsOpen(false)}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="calc-title"
+            onClick={(e) => e.stopPropagation()}
+            className="bg-white w-full max-w-4xl max-h-[92vh] rounded-3xl shadow-2xl flex flex-col overflow-hidden"
+          >
+            {/* Шапка окна */}
+            <div className="relative bg-gradient-to-br from-slate-900 via-school-blue to-slate-900 text-white px-6 sm:px-8 py-6 shrink-0">
+              <div className="absolute inset-0 opacity-15 bg-[radial-gradient(#ffffff_1px,transparent_1px)] [background-size:16px_16px]" />
+              <button
+                type="button"
+                onClick={() => setIsOpen(false)}
+                aria-label="Закрыть"
+                className="absolute top-4 right-4 w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition z-10"
+              >
+                <i className="fa-solid fa-xmark" />
+              </button>
+              <div className="relative flex items-center gap-4 pr-10">
+                <div className="w-12 h-12 rounded-2xl bg-white/10 border border-white/20 flex items-center justify-center text-brand-400 text-xl shrink-0">
+                  <i className="fa-solid fa-calculator" />
+                </div>
+                <div>
+                  <h2 id="calc-title" className="text-xl sm:text-2xl font-black">
+                    Расчёт комплектующих
+                  </h2>
+                  <p className="text-slate-300 text-xs sm:text-sm">
+                    Сколько деталей и коробок потребуется для сборки парт
+                  </p>
+                </div>
+              </div>
+            </div>
 
-            <div className="p-6 md:p-8 overflow-y-auto">
-                <h1 className="text-2xl font-bold text-gray-900 mb-6">Расчет комплектующих</h1>
-
-                <div className="flex flex-col md:flex-row gap-4 mb-6">
-                    <div className="flex-1">
-                        <label className="block text-sm font-medium text-gray-600 mb-1.5">Количество парт</label>
-                        <input 
-                            type="number" 
-                            min="1" 
-                            placeholder="Например: 10" 
-                            value={deskCount}
-                            onChange={(e) => setDeskCount(e.target.value)}
-                            className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#047EB2] focus:border-[#047EB2] outline-none transition-all"
-                        />
-                    </div>
-
-                    <div className="flex-1">
-                        <label className="block text-sm font-medium text-gray-600 mb-1.5">Тип парты</label>
-                        <div className="flex space-x-2">
-                            <button 
-                                onClick={() => setDeskType('oneSeater')}
-                                className={`flex-1 py-3 px-2 rounded-xl text-sm font-bold transition-all border-2 ${
-                                    deskType === 'oneSeater' 
-                                    ? 'border-[#047EB2] bg-[#E0F2FE] text-[#047EB2]' 
-                                    : 'border-gray-200 text-gray-600 hover:border-gray-300'
-                                }`}
-                            >
-                                Одноместная
-                            </button>
-                            <button 
-                                onClick={() => setDeskType('twoSeater')}
-                                className={`flex-1 py-3 px-2 rounded-xl text-sm font-bold transition-all border-2 ${
-                                    deskType === 'twoSeater' 
-                                    ? 'border-[#047EB2] bg-[#E0F2FE] text-[#047EB2]' 
-                                    : 'border-gray-200 text-gray-600 hover:border-gray-300'
-                                }`}
-                            >
-                                Двухместная
-                            </button>
-                        </div>
-                    </div>
+            {/* Содержимое */}
+            <div className="p-6 sm:p-8 overflow-y-auto space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <div>
+                  <label
+                    htmlFor="calc-count"
+                    className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2"
+                  >
+                    Количество парт
+                  </label>
+                  <div className="relative">
+                    <i className="fa-solid fa-hashtag absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+                    <input
+                      id="calc-count"
+                      type="number"
+                      min="1"
+                      inputMode="numeric"
+                      placeholder="Например: 10"
+                      value={deskCount}
+                      onChange={(e) => setDeskCount(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") handleCalculate();
+                      }}
+                      className="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-school-blue focus:ring-2 focus:ring-school-blue/20 transition"
+                    />
+                  </div>
                 </div>
 
-                <button 
-                    onClick={handleCalculate}
-                    className="w-full md:w-auto px-10 py-4 bg-[#047EB2] hover:bg-[#0369A1] text-white text-sm font-black tracking-wider uppercase rounded-xl shadow-[0_4px_14px_0_rgba(4,126,178,0.39)] hover:shadow-[0_6px_20px_rgba(4,126,178,0.23)] hover:-translate-y-0.5 transition-all"
-                >
-                    РАССЧИТАТЬ СМЕТУ
-                </button>
+                <div>
+                  <span className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+                    Тип парты
+                  </span>
+                  <div className="flex bg-slate-100 p-1 rounded-xl gap-1">
+                    {(
+                      [
+                        { value: "oneSeater", label: "Одноместная", icon: "fa-user" },
+                        { value: "twoSeater", label: "Двухместная", icon: "fa-user-group" },
+                      ] as const
+                    ).map((opt) => (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        onClick={() => setDeskType(opt.value)}
+                        className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-2 rounded-lg text-sm font-semibold transition ${
+                          deskType === opt.value
+                            ? "bg-white text-school-blue shadow"
+                            : "text-slate-500 hover:text-slate-800"
+                        }`}
+                      >
+                        <i className={`fa-solid ${opt.icon} text-xs`} />
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
 
-                {hasError && (
-                    <div className="mt-4 p-3 bg-red-50 text-red-600 text-sm border border-red-100 rounded-lg font-medium">
-                        Пожалуйста, введите корректное количество парт.
+              <button
+                type="button"
+                onClick={handleCalculate}
+                className="w-full md:w-auto px-8 py-3.5 bg-brand-500 hover:bg-brand-600 text-white text-sm font-bold rounded-xl shadow-lg transition flex items-center justify-center gap-2"
+              >
+                <i className="fa-solid fa-calculator" /> Рассчитать смету
+              </button>
+
+              {hasError && (
+                <div className="flex items-center gap-2 p-3 bg-red-50 text-red-600 text-sm border border-red-100 rounded-xl font-medium">
+                  <i className="fa-solid fa-circle-exclamation" />
+                  Пожалуйста, введите корректное количество парт.
+                </div>
+              )}
+
+              {results && !hasError && (
+                <div className="pt-6 border-t border-slate-100 space-y-5">
+                  {/* Итоги */}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4">
+                      <span className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                        Тип
+                      </span>
+                      <span className="block text-sm font-bold text-slate-900 mt-1">
+                        {results.typeLabel}
+                      </span>
                     </div>
-                )}
-
-                {results && !hasError && (
-                    <div className="mt-8 pt-6 border-t border-gray-100 animate-in fade-in duration-300">
-                        
-                        {/* --- ВАЖНО: ВЫДЕЛЕННЫЙ БЛОК ДЛЯ СКАЧИВАНИЯ --- */}
-                        <div className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4 bg-gray-50 p-4 rounded-xl border border-gray-200 shadow-sm">
-                            <h2 className="text-xl font-bold text-gray-800 w-full text-center sm:text-left">
-                                {results.count} шт. ({results.typeLabel})
-                            </h2>
-
-                            <button 
-                                onClick={handleDownload}
-                                // Изменили отступы: px-4 (меньше по горизонтали) и py-5 (больше по вертикали). Убрали w-full.
-                                className="flex items-center justify-center gap-2 px-4 py-5 bg-white border-2 border-[#10B981] hover:bg-[#F0FDF4] text-black text-sm font-black uppercase tracking-widest rounded-xl shadow-[0_4px_14px_0_rgba(16,185,129,0.15)] hover:shadow-[0_6px_20px_rgba(16,185,129,0.3)] transition-all"
-                            >
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-[#10B981]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                                </svg>
-                                Скачать Excel
-                            </button>
-                        </div>
-                        {/* --- КОНЕЦ БЛОКА СКАЧИВАНИЯ --- */}
-
-                        <div className="w-full overflow-x-auto rounded-xl border border-gray-200 bg-white shadow-sm">
-                            <table className="w-full text-left border-collapse min-w-[600px]">
-                                <thead>
-                                    <tr className="bg-gray-50 border-b border-gray-200 text-xs uppercase tracking-wider text-gray-500">
-                                        <th className="py-3 px-4 font-semibold whitespace-nowrap">Деталь</th>
-                                        <th className="py-3 px-4 font-semibold text-center w-24">Ед. изм.</th>
-                                        <th className="py-3 px-4 font-semibold text-center w-28">Всего</th>
-                                        <th className="py-3 px-4 font-semibold text-center w-28">Коробок</th>
-                                        <th className="py-3 px-4 font-semibold text-right w-36">Остаток</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-gray-100 text-sm">
-                                    {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                                    {results.data.map((row: any, idx: number) => (
-                                        <tr key={idx} className="hover:bg-blue-50/30 transition-colors">
-                                            <td className="py-3 px-4 text-gray-800 font-medium">{row.name}</td>
-                                            <td className="py-3 px-4 text-center text-gray-400">{row.unit}</td>
-                                            <td className="py-3 px-4 text-center font-bold text-blue-600">{row.total}</td>
-                                            <td className="py-3 px-4 text-center text-gray-700 font-medium">{row.boxes}</td>
-                                            <td className="py-3 px-4 text-right">
-                                                {row.remainder > 0 ? (
-                                                    <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-bold bg-amber-100 text-amber-800">
-                                                        +{row.remainder} {row.unit}
-                                                    </span>
-                                                ) : (
-                                                    <span className="text-gray-300 font-bold">-</span>
-                                                )}
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-
+                    <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4">
+                      <span className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                        Количество
+                      </span>
+                      <span className="block text-2xl font-black text-school-blue mt-0.5">
+                        {results.count} шт.
+                      </span>
                     </div>
-                )}
+                    <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4">
+                      <span className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                        Позиций деталей
+                      </span>
+                      <span className="block text-2xl font-black text-slate-900 mt-0.5">
+                        {results.data.length}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Скачать */}
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <h3 className="text-lg font-black text-slate-900">Результат расчёта</h3>
+                    <button
+                      type="button"
+                      onClick={handleDownload}
+                      className="inline-flex items-center justify-center gap-2 px-5 py-3 bg-white border-2 border-brand-500 hover:bg-brand-50 text-brand-700 text-sm font-bold rounded-xl transition"
+                    >
+                      <i className="fa-solid fa-file-excel" /> Скачать Excel
+                    </button>
+                  </div>
+
+                  {/* Таблица */}
+                  <div className="w-full overflow-x-auto rounded-2xl border border-slate-200 bg-white">
+                    <table className="w-full text-left border-collapse min-w-[600px]">
+                      <thead>
+                        <tr className="bg-slate-900 text-[11px] uppercase tracking-wider text-slate-300">
+                          <th className="py-3 px-4 font-semibold">Деталь</th>
+                          <th className="py-3 px-4 font-semibold text-center w-24">Ед. изм.</th>
+                          <th className="py-3 px-4 font-semibold text-center w-28">Всего</th>
+                          <th className="py-3 px-4 font-semibold text-center w-28">Коробок</th>
+                          <th className="py-3 px-4 font-semibold text-right w-36">Остаток</th>
+                        </tr>
+                      </thead>
+                      <tbody className="text-sm">
+                        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                        {results.data.map((row: any, idx: number) => (
+                          <tr
+                            key={idx}
+                            className="odd:bg-white even:bg-slate-50/70 hover:bg-blue-50/50 transition-colors"
+                          >
+                            <td className="py-3 px-4 text-slate-800 font-medium">{row.name}</td>
+                            <td className="py-3 px-4 text-center text-slate-400">{row.unit}</td>
+                            <td className="py-3 px-4 text-center font-black text-school-blue">
+                              {row.total}
+                            </td>
+                            <td className="py-3 px-4 text-center text-slate-700 font-semibold">
+                              {row.boxes}
+                            </td>
+                            <td className="py-3 px-4 text-right">
+                              {row.remainder > 0 ? (
+                                <span className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-bold bg-amber-100 text-amber-800">
+                                  +{row.remainder} {row.unit}
+                                </span>
+                              ) : (
+                                <span className="text-slate-300 font-bold">-</span>
+                              )}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
