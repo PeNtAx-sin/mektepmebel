@@ -23,7 +23,7 @@ export default defineType({
       title: "Фото",
       type: "array",
       description:
-        "Горизонтальные, 4:3, от 1600 px по ширине. На главной фото обрезаются до 4:3 — важное держите ближе к центру или отметьте кнопкой «Hotspot».",
+        "Горизонтальные, 4:3, от 1600 px по ширине. Первое фото — обложка. На сайте фото обрезаются до 4:3 — важное держите ближе к центру или отметьте кнопкой «Hotspot».",
       of: [
         defineArrayMember({
           type: "image",
@@ -59,7 +59,7 @@ export default defineType({
       name: "showOnHome",
       title: "Показывать на главной",
       type: "boolean",
-      description: "Фото проекта появятся в слайдере на первом экране.",
+      description: "Проект появится в блоке «Готовые проекты» на главной.",
       initialValue: true,
     }),
     defineField({

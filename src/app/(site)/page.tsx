@@ -1,12 +1,14 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import HeroProjects from "@/components/HeroProjects";
+import ProjectsSection from "@/components/home/ProjectsSection";
+import RoomShowcase from "@/components/home/RoomShowcase";
 import OpenTenderButton from "@/components/OpenTenderButton";
 import {
   getCategories,
   getFeaturedProduct,
-  getHeroSlides,
   getProductsCount,
+  getProjects,
+  getRoomShowcase,
 } from "@/lib/data";
 import Image from "next/image";
 import { formatPrice, vatLabel } from "@/lib/format";
@@ -50,13 +52,14 @@ const advantages = [
 ];
 
 export default async function HomePage() {
-  const [categories, slides, productsCount] = await Promise.all([
+  const [categories, showcase, projects, productsCount] = await Promise.all([
     getCategories(),
-    getHeroSlides(),
+    getRoomShowcase(),
+    getProjects(),
     getProductsCount(),
   ]);
-  // пока нет фото проектов, на первом экране — карточка товара
-  const featured = slides.length === 0 ? await getFeaturedProduct() : null;
+  // пока в Studio нет 3D-кабинетов, на первом экране — карточка товара
+  const featured = showcase ? null : await getFeaturedProduct();
 
   return (
     <>
@@ -64,7 +67,7 @@ export default async function HomePage() {
       <section className="relative bg-gradient-to-br from-slate-900 via-school-blue to-slate-900 text-white py-20 lg:py-28 overflow-hidden">
         <div className="absolute inset-0 opacity-15 bg-[radial-gradient(#ffffff_1px,transparent_1px)] [background-size:16px_16px]" />
         <div className="max-w-7xl mx-auto px-4 sm:px-8 relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
-          <div className="lg:col-span-7 space-y-6">
+          <div className={`${showcase ? "lg:col-span-6" : "lg:col-span-7"} space-y-6`}>
             <span className="inline-flex items-center gap-2 bg-brand-500/20 text-brand-400 border border-brand-500/30 px-3.5 py-1.5 rounded-full text-xs font-semibold uppercase tracking-wider">
               <i className="fa-solid fa-shield-halved" /> Сертифицированная школьная
               мебель по ГОСТ
@@ -104,9 +107,9 @@ export default async function HomePage() {
             </div>
           </div>
 
-          {slides.length > 0 && (
-            <div className="lg:col-span-5">
-              <HeroProjects slides={slides} />
+          {showcase && (
+            <div className="lg:col-span-6">
+              <RoomShowcase showcase={showcase} projectIds={projects.map((p) => p.id)} />
             </div>
           )}
 
@@ -148,6 +151,9 @@ export default async function HomePage() {
           )}
         </div>
       </section>
+
+      {/* ============ ГОТОВЫЕ ПРОЕКТЫ ============ */}
+      {projects.length > 0 && <ProjectsSection projects={projects} />}
 
       {/* ============ КАТЕГОРИИ ============ */}
       <section className="py-20 max-w-7xl mx-auto px-4 sm:px-8">

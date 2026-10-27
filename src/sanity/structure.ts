@@ -10,6 +10,12 @@ export const structure: StructureResolver = (S) =>
   S.list()
     .title('Каталог')
     .items([
+      // Единственный документ «Главная страница» — без списка, сразу форма
+      S.listItem()
+        .title('Главная страница')
+        .icon(() => '🏫')
+        .child(S.document().schemaType('homePage').documentId('homePage').title('Главная страница')),
+      S.divider(),
       // Категория → её товары (у основной — вместе с товарами подкатегорий)
       S.listItem()
         .title('Товары по категориям')
@@ -46,5 +52,5 @@ export const structure: StructureResolver = (S) =>
       S.documentTypeListItem('product').title('Все товары'),
       S.documentTypeListItem('category').title('Категории'),
       S.divider(),
-      S.documentTypeListItem('project').title('Проекты (слайдер на главной)'),
+      S.documentTypeListItem('project').title('Готовые проекты'),
     ])

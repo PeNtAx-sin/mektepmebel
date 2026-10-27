@@ -34,6 +34,14 @@ export default defineConfig({
       },
     ],
   },
+  document: {
+    // «Главная страница» — один документ, открывается из меню; второй создать нельзя
+    newDocumentOptions: (prev) => prev.filter((item) => item.templateId !== 'homePage'),
+    actions: (prev, {schemaType}) =>
+      schemaType === 'homePage'
+        ? prev.filter(({action}) => action !== 'delete' && action !== 'duplicate' && action !== 'unpublish')
+        : prev,
+  },
   plugins: [
     structureTool({structure}),
     // Vision is for querying with GROQ from inside the Studio

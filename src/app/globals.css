@@ -39,3 +39,23 @@ body {
   --color-school-wood: #d97706;
   --color-school-sand: #fef3c7;
 }
+/* Смена 3D-кабинетов на главной: --dir = 1 (вперёд, новый въезжает справа) или -1 (назад) */
+@keyframes room-in {
+  from { opacity: 0; transform: translateX(calc(var(--dir, 1) * 22%)) scale(0.94); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes room-out {
+  from { opacity: 1; transform: none; }
+  to { opacity: 0; transform: translateX(calc(var(--dir, 1) * -22%)) scale(0.94); }
+}
+@keyframes room-pins {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
+.room-in { animation: room-in 850ms cubic-bezier(0.22, 1, 0.36, 1) 200ms both; }
+.room-out { animation: room-out 500ms cubic-bezier(0.55, 0, 0.75, 0.3) both; }
+.room-pins { animation: room-pins 400ms ease-out 800ms both; }
+@media (prefers-reduced-motion: reduce) {
+  .room-in, .room-out, .room-pins { animation-name: none; }
+  .room-out { opacity: 0; }
+}

@@ -217,16 +217,20 @@ export async function getAllProductPaths(): Promise<
 }
 /* ---------- проекты ---------- */
 
-export type HeroSlide = {
+export type ProjectPhoto = {
   src: string;
   alt: string;
-  title: string;
-  location: string | null;
-  isVisualization: boolean;
   position: string; // object-position из точки Hotspot в Studio
 };
 
-const MAX_HERO_SLIDES = 12;
+export type Project = {
+  id: string;
+  title: string;
+  location: string | null;
+  isVisualization: boolean;
+  photos: ProjectPhoto[];
+  products: { title: string; href: string }[];
+};
 
 type Crop = { top: number; bottom: number; left: number; right: number };
 type Hotspot = { x: number; y: number };
@@ -241,38 +245,129 @@ function hotspotPosition(image: SanityImage): string {
   return `${toPercent(hotspot.x, crop.left, crop.right)}% ${toPercent(hotspot.y, crop.top, crop.bottom)}%`;
 }
 
-/** Фото проектов для слайдера на первом экране главной */
-export async function getHeroSlides(): Promise<HeroSlide[]> {
-  const projects = await fetchGroq<
+/** Готовые проекты для блока на главной */
+export async function getProjects(): Promise<Project[]> {
+  const rows = await fetchGroq<
     {
+      id: string;
       title: string;
       location: string | null;
       isVisualization: boolean | null;
       photos: (SanityImage & { alt?: string })[] | null;
+      products: (RawProduct | null)[] | null;
     }[]
   >(`
     *[_type == "project" && showOnHome != false && count(photos) > 0]
       | order(coalesce(sortOrder, 999) asc, _createdAt desc) {
+      "id": _id,
       title,
       location,
       isVisualization,
-      "photos": photos[defined(asset)]{ asset, crop, hotspot, alt }
+      "photos": photos[defined(asset)]{ asset, crop, hotspot, alt },
+      "products": products[]-> ${PRODUCT_PROJECTION}
     }
   `);
 
-  return projects
-    .flatMap((p) =>
-      (p.photos ?? []).map((photo) => {
-        return {
-          src: imageUrl(photo),
-          alt: photo?.alt?.trim() || p.title,
-          title: p.title,
-          location: p.location,
-          isVisualization: Boolean(p.isVisualization),
-          position: hotspotPosition(photo),
-        };
-      }),
-    )
-    .filter((s): s is HeroSlide => s.src !== null)
-    .slice(0, MAX_HERO_SLIDES);
+  return rows.map((p) => ({
+    id: p.id,
+    title: p.title,
+    location: p.location,
+    isVisualization: Boolean(p.isVisualization),
+    photos: (p.photos ?? [])
+      .map((photo) => ({
+        src: imageUrl(photo),
+        alt: photo?.alt?.trim() || p.title,
+        position: hotspotPosition(photo),
+      }))
+      .filter((photo): photo is ProjectPhoto => photo.src !== null),
+    products: (p.products ?? [])
+      .filter((r): r is RawProduct => Boolean(r?.categorySlug))
+      .map((r) => ({ title: r.title.trim(), href: `/catalog/${r.categorySlug}/${r.slug}` })),
+  }));
+}
+
+/* ---------- главная: 3D-кабинеты ---------- */
+
+export type ShowcaseRoom = {
+  key: string;
+  label: string;
+  image: { src: string; alt: string; width: number; height: number };
+  pins: { key: string; label: string; x: number; y: number; href: string | null }[];
+  projectId: string | null;
+  categoryHref: string | null;
+};
+
+export type RoomShowcase = { title: string | null; rooms: ShowcaseRoom[] };
+
+export async function getRoomShowcase(): Promise<RoomShowcase | null> {
+  const row = await fetchGroq<{
+    title: string | null;
+    rooms:
+      | {
+          key: string;
+          label: string | null;
+          image: (SanityImage & { alt?: string }) | null;
+          width: number | null;
+          height: number | null;
+          projectId: string | null;
+          categorySlug: string | null;
+          pins:
+            | { key: string; label: string | null; x: number | null; y: number | null; product: RawProduct | null }[]
+            | null;
+        }[]
+      | null;
+  } | null>(`
+    *[_id == "homePage"][0]{
+      "title": roomsTitle,
+      "rooms": rooms[]{
+        "key": _key,
+        label,
+        "image": image{ asset, alt },
+        "width": image.asset->metadata.dimensions.width,
+        "height": image.asset->metadata.dimensions.height,
+        "projectId": project._ref,
+        "categorySlug": category->slug.current,
+        "pins": pins[]{
+          "key": _key,
+          label,
+          "x": position.x,
+          "y": position.y,
+          "product": product-> ${PRODUCT_PROJECTION}
+        }
+      }
+    }
+  `);
+
+  const rooms = (row?.rooms ?? []).flatMap((room): ShowcaseRoom[] => {
+    const src = imageUrl(room.image);
+    if (!room.label || !src || !room.width || !room.height) return [];
+    const label = room.label.trim();
+    return [
+      {
+        key: room.key,
+        label,
+        image: {
+          src,
+          alt: room.image?.alt?.trim() || `3D-модель: ${label}`,
+          width: room.width,
+          height: room.height,
+        },
+        pins: (room.pins ?? [])
+          .filter((pin) => pin.label && pin.x != null && pin.y != null)
+          .map((pin) => ({
+            key: pin.key,
+            label: pin.label!.trim(),
+            x: pin.x!,
+            y: pin.y!,
+            href: pin.product?.categorySlug
+              ? `/catalog/${pin.product.categorySlug}/${pin.product.slug}`
+              : null,
+          })),
+        projectId: room.projectId,
+        categoryHref: room.categorySlug ? `/catalog/${room.categorySlug}` : null,
+      },
+    ];
+  });
+
+  return rooms.length > 0 ? { title: row?.title?.trim() || null, rooms } : null;
 }
