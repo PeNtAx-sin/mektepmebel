@@ -18,7 +18,22 @@ export default defineConfig({
   projectId,
   dataset,
   // Add and edit the content schema in the './sanity/schemaTypes' folder
-  schema,
+  schema: {
+    ...schema,
+    // «Создать» внутри категории в «Товары по категориям» сразу подставляет её
+    templates: (prev) => [
+      ...prev,
+      {
+        id: 'product-in-category',
+        title: 'Товар в категории',
+        schemaType: 'product',
+        parameters: [{name: 'categoryId', type: 'string'}],
+        value: ({categoryId}: {categoryId: string}) => ({
+          categoryRef: {_type: 'reference', _ref: categoryId},
+        }),
+      },
+    ],
+  },
   plugins: [
     structureTool({structure}),
     // Vision is for querying with GROQ from inside the Studio

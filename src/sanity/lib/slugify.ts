@@ -6,6 +6,15 @@ const MAP: Record<string, string> = {
   ә: "a", ғ: "g", қ: "k", ң: "n", ө: "o", ұ: "u", ү: "u", һ: "h", і: "i",
 };
 
+/** Проверка slug для валидации в Studio: только латиница, цифры и дефисы */
+export function checkSlug(slug: { current?: string } | undefined): true | string {
+  const value = slug?.current ?? "";
+  if (!value) return "Нажмите «Generate» или впишите адрес";
+  return /^[a-z0-9]+(-[a-z0-9]+)*$/.test(value)
+    ? true
+    : "Только строчная латиница, цифры и дефисы, без пробелов — нажмите «Generate»";
+}
+
 export function slugify(input: string): string {
   return input
     .toLowerCase()

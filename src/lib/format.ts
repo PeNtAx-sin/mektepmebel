@@ -8,6 +8,9 @@ export function plural(n: number, forms: [string, string, string]): string {
 
 export const formatPrice = (n: number) => `${n.toLocaleString("ru-RU")} ₸`;
 
+/** Подпись к цене: «с НДС» или «без НДС» — смотря какое поле заполнено в Sanity */
+export const vatLabel = (vatIncluded: boolean) => (vatIncluded ? "с НДС" : "без НДС");
+
 /** Делит текст из Sanity на абзацы по пустой строке */
 export function paragraphs(text: string): string[] {
   return text

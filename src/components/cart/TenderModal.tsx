@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { vatLabel } from "@/lib/format";
 import { site } from "@/lib/site";
 import { useCart } from "./CartProvider";
 
@@ -58,7 +59,8 @@ export default function TenderModal() {
     if (items.length > 0) {
       lines.push("", "Товары:");
       items.forEach((it, i) => {
-        const price = it.price != null ? ` × ${fmt(it.price)} ₸` : " (цена по запросу)";
+        const vat = it.vatIncluded != null ? ` ${vatLabel(it.vatIncluded)}` : "";
+        const price = it.price != null ? ` × ${fmt(it.price)} ₸${vat}` : " (цена по запросу)";
         lines.push(`${i + 1}. ${it.title} — ${it.qty} шт.${price}`);
       });
       if (total > 0) {
@@ -69,9 +71,14 @@ export default function TenderModal() {
     const url = `https://wa.me/${site.whatsapp}?text=${encodeURIComponent(lines.join("\n"))}`;
     window.open(url, "_blank", "noopener,noreferrer");
 
+    // смету не очищаем: сообщение в WhatsApp ещё не отправлено
     setWaUrl(url);
     setForm(emptyForm);
+  };
+
+  const finish = () => {
     clear();
+    setOpen(false);
   };
 
   return (
@@ -115,13 +122,22 @@ export default function TenderModal() {
             >
               <i className="fa-brands fa-whatsapp" /> Открыть WhatsApp ещё раз
             </a>
-            <div>
+            <div className="flex flex-col sm:flex-row justify-center items-center gap-4">
+              {items.length > 0 && (
+                <button
+                  type="button"
+                  onClick={finish}
+                  className="text-xs font-semibold text-slate-700 hover:text-slate-900 underline"
+                >
+                  Готово, очистить смету
+                </button>
+              )}
               <button
                 type="button"
                 onClick={() => setOpen(false)}
                 className="text-xs text-slate-500 hover:text-slate-800 underline"
               >
-                Закрыть
+                {items.length > 0 ? "Закрыть, смету сохранить" : "Закрыть"}
               </button>
             </div>
           </div>

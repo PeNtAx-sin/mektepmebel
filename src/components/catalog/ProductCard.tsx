@@ -2,7 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import AddToCartButton from "@/components/cart/AddToCartButton";
 import type { Product } from "@/lib/data";
-import { formatPrice } from "@/lib/format";
+import { formatPrice, vatLabel } from "@/lib/format";
 
 export default function ProductCard({ product }: { product: Product }) {
   const href = `/catalog/${product.categorySlug}/${product.slug}`;
@@ -12,15 +12,15 @@ export default function ProductCard({ product }: { product: Product }) {
       <div>
         <Link
           href={href}
-          className="block relative h-48 rounded-2xl overflow-hidden mb-4 bg-slate-100"
+          className="block relative h-56 rounded-2xl overflow-hidden mb-4 bg-white border border-slate-100"
         >
           {product.image ? (
             <Image
               src={product.image}
-              alt={product.title}
+              alt={product.imageAlt}
               fill
-              sizes="(min-width: 1024px) 25vw, (min-width: 640px) 50vw, 100vw"
-              className="object-cover group-hover:scale-105 transition duration-300"
+              sizes="(min-width: 1280px) 25vw, (min-width: 640px) 50vw, 100vw"
+              className="object-contain p-3 group-hover:scale-105 transition duration-300"
             />
           ) : (
             <span className="w-full h-full flex items-center justify-center text-slate-300 text-5xl">
@@ -46,8 +46,13 @@ export default function ProductCard({ product }: { product: Product }) {
           <span className="text-xs text-slate-500">
             {product.inStock ? "Цена за шт:" : "Под заказ"}
           </span>
-          <span className="text-lg font-black text-slate-900">
+          <span className="text-lg font-black text-slate-900 text-right leading-tight">
             {product.price != null ? formatPrice(product.price) : "По запросу"}
+            {product.price != null && (
+              <span className="block text-[11px] font-normal text-slate-500">
+                {vatLabel(product.vatIncluded)}
+              </span>
+            )}
           </span>
         </div>
         <div className="flex gap-2">
@@ -65,6 +70,7 @@ export default function ProductCard({ product }: { product: Product }) {
               categorySlug: product.categorySlug,
               title: product.title,
               price: product.price,
+              vatIncluded: product.vatIncluded,
             }}
           />
         </div>

@@ -16,6 +16,7 @@ export type CartItem = {
   categorySlug?: string;
   title: string;
   price: number | null; // null = цена по запросу
+  vatIncluded?: boolean; // нет в сметах, сохранённых до появления поля
   qty: number;
 };
 

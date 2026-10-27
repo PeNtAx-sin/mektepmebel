@@ -9,6 +9,7 @@ export default function CatalogSidebar({
   activeSlug?: string;
 }) {
   const top = categories.filter((c) => !c.parentSlug);
+  if (top.length === 0) return null;
 
   return (
     <aside className="w-full lg:w-72 shrink-0 bg-white p-6 rounded-3xl shadow-sm border border-slate-200 h-fit space-y-2">

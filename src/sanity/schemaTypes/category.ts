@@ -1,5 +1,5 @@
 import { defineArrayMember, defineField, defineType } from "sanity";
-import { slugify } from "../lib/slugify";
+import { checkSlug, slugify } from "../lib/slugify";
 
 export default defineType({
   name: "category",
@@ -18,7 +18,7 @@ export default defineType({
       type: "slug",
       description: "Часть адреса: /catalog/<slug>. Латиницей, без пробелов.",
       options: { source: "title", maxLength: 96, slugify },
-      validation: (rule) => rule.required(),
+      validation: (rule) => rule.required().custom(checkSlug),
     }),
     defineField({
       name: "parent",
@@ -32,6 +32,7 @@ export default defineType({
       name: "image",
       title: "Фото для карточки",
       type: "image",
+      description: "Карточка на главной: фото обрезается до горизонтального прямоугольника, важное — в центре.",
       options: { hotspot: true },
     }),
     defineField({
@@ -88,7 +89,15 @@ export default defineType({
       validation: (rule) => rule.max(170).warning("Лучше не длиннее 150–160 символов"),
     }),
   ],
+  orderings: [
+    { title: "Порядок", name: "sortOrder", by: [{ field: "sortOrder", direction: "asc" }] },
+  ],
   preview: {
-    select: { title: "title", subtitle: "parent.title", media: "image" },
+    select: { title: "title", parent: "parent.title", media: "image" },
+    prepare: ({ title, parent, media }) => ({
+      title,
+      subtitle: parent ? `в «${parent}»` : "основная категория",
+      media,
+    }),
   },
 });

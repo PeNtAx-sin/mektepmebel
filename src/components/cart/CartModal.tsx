@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { vatLabel } from "@/lib/format";
 import { useCart } from "./CartProvider";
 
 const fmt = (n: number) => n.toLocaleString("ru-RU");
@@ -84,7 +85,9 @@ export default function CartModal() {
                 <div className="min-w-0">
                   <h3 className="font-bold text-sm text-slate-900">{item.title}</h3>
                   <span className="text-xs text-slate-500">
-                    {item.price != null ? `${fmt(item.price)} ₸ / шт.` : "Цена по запросу"}
+                    {item.price != null
+                      ? `${fmt(item.price)} ₸ / шт.${item.vatIncluded != null ? ` ${vatLabel(item.vatIncluded)}` : ""}`
+                      : "Цена по запросу"}
                   </span>
                 </div>
                 <div className="flex items-center gap-3 shrink-0">

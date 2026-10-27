@@ -1,12 +1,12 @@
 import Link from "next/link";
-import { catalogMenu, mainNav, site } from "@/lib/site";
+import { site, type MenuItem } from "@/lib/site";
 
-export default function Footer() {
+export default function Footer({ catalogMenu }: { catalogMenu: MenuItem[] }) {
   const year = new Date().getFullYear();
 
   return (
     <footer className="bg-slate-900 text-slate-400 py-12 border-t border-slate-800">
-      <div className="max-w-7xl mx-auto px-4 sm:px-8 grid grid-cols-1 md:grid-cols-4 gap-8 text-sm mb-12">
+      <div className="max-w-7xl mx-auto px-4 sm:px-8 grid grid-cols-1 md:grid-cols-3 gap-8 text-sm mb-12">
         <div className="space-y-4">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 bg-school-blue rounded-xl flex items-center justify-center text-white">
@@ -23,6 +23,11 @@ export default function Footer() {
         <div>
           <h4 className="font-bold text-white mb-4">Каталог</h4>
           <ul className="space-y-2 text-xs">
+            <li>
+              <Link href="/catalog" className="hover:text-white transition">
+                Весь каталог
+              </Link>
+            </li>
             {catalogMenu.map((item) => (
               <li key={item.href}>
                 <Link href={item.href} className="hover:text-white transition">
@@ -33,18 +38,7 @@ export default function Footer() {
           </ul>
         </div>
 
-        <div>
-          <h4 className="font-bold text-white mb-4">Компания</h4>
-          <ul className="space-y-2 text-xs">
-            {mainNav.slice(1).map((item) => (
-              <li key={item.href}>
-                <Link href={item.href} className="hover:text-white transition">
-                  {item.title}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </div>
+        {/* TODO: колонка «Компания», когда появятся страницы из mainNav (см. site.ts) */}
 
         <div>
           <h4 className="font-bold text-white mb-4">Контакты</h4>

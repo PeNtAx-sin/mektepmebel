@@ -1,18 +1,22 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import HeroProjects from "@/components/HeroProjects";
 import OpenTenderButton from "@/components/OpenTenderButton";
 import {
   getCategories,
   getFeaturedProduct,
+  getHeroSlides,
   getProductsCount,
 } from "@/lib/data";
 import Image from "next/image";
+import { formatPrice, vatLabel } from "@/lib/format";
+
 export const metadata: Metadata = {
   title: {
     absolute: "Mektep Mebel — Школьная и учебная мебель в Казахстане по ГОСТу",
   },
   description:
-    "Школьные парты и стулья, комплекты, мебель для кабинетов и детских садов. Доставка по Казахстану, документы для госзакупок. Запросите смету.",
+    "Школьные парты и стулья, парты для кабинетов химии и физики, спецмебель. Доставка по Казахстану, документы для госзакупок. Запросите смету.",
   alternates: { canonical: "/" },
 };
 
@@ -46,11 +50,13 @@ const advantages = [
 ];
 
 export default async function HomePage() {
-  const [categories, featured, productsCount] = await Promise.all([
+  const [categories, slides, productsCount] = await Promise.all([
     getCategories(),
-    getFeaturedProduct(),
+    getHeroSlides(),
     getProductsCount(),
   ]);
+  // пока нет фото проектов, на первом экране — карточка товара
+  const featured = slides.length === 0 ? await getFeaturedProduct() : null;
 
   return (
     <>
@@ -98,32 +104,38 @@ export default async function HomePage() {
             </div>
           </div>
 
+          {slides.length > 0 && (
+            <div className="lg:col-span-5">
+              <HeroProjects slides={slides} />
+            </div>
+          )}
+
           {featured && (
             <div className="lg:col-span-5">
               <div className="bg-white/10 backdrop-blur-md p-6 sm:p-8 rounded-3xl border border-white/20 shadow-2xl relative">
-                {featured.badge && (
-                  <div className="absolute -top-4 -right-4 bg-brand-500 text-white text-xs font-bold px-4 py-2 rounded-full shadow-lg">
-                    {featured.badge}
-                  </div>
-                )}
                 {featured.image && (
                   <Image
                     src={featured.image}
-                    alt={featured.title}
+                    alt={featured.imageAlt}
                     width={600}
                     height={400}
                     priority
-                    className="rounded-2xl w-full h-56 object-cover mb-6 shadow-inner"
+                    className="rounded-2xl w-full h-56 object-contain bg-white p-3 mb-6 shadow-inner"
                   />
                 )}
                 <h2 className="text-xl font-bold text-white mb-2">{featured.title}</h2>
-                <p className="text-slate-300 text-xs mb-4">{featured.shortDescription}</p>
+                {featured.shortDescription && (
+                  <p className="text-slate-300 text-xs mb-4">{featured.shortDescription}</p>
+                )}
                 <div className="flex items-center justify-between">
-                <span className="text-2xl font-black text-brand-400">
-                  {featured.price != null
-                    ? `${featured.price.toLocaleString("ru-RU")} ₸`
-                    : "Цена по запросу"}
-                </span>
+                  <span className="text-2xl font-black text-brand-400">
+                    {featured.price != null ? formatPrice(featured.price) : "Цена по запросу"}
+                    {featured.price != null && (
+                      <span className="block text-xs font-normal text-slate-300">
+                        {vatLabel(featured.vatIncluded)}
+                      </span>
+                    )}
+                  </span>
                   <Link
                     href={`/catalog/${featured.categorySlug}/${featured.slug}`}
                     className="bg-white text-slate-900 font-bold px-4 py-2 rounded-xl text-xs hover:bg-slate-100 transition"
@@ -192,11 +204,8 @@ export default async function HomePage() {
             </Link>
           ))}
 
-          {/* Карточка: тендеры */}
-          <Link
-            href="/dlya-shkol"
-            className="group bg-gradient-to-br from-school-blue to-slate-900 text-white rounded-3xl p-6 shadow-lg hover:shadow-xl transition flex flex-col justify-between"
-          >
+          {/* Карточка: тендеры. TODO: ссылка на /dlya-shkol, когда появится страница */}
+          <div className="group bg-gradient-to-br from-school-blue to-slate-900 text-white rounded-3xl p-6 shadow-lg hover:shadow-xl transition flex flex-col justify-between">
             <div>
               <div className="h-12 w-12 bg-white/10 rounded-2xl flex items-center justify-center mb-6 text-brand-400 text-xl">
                 <i className="fa-solid fa-handshake" />
@@ -207,11 +216,11 @@ export default async function HomePage() {
                 15 минут.
               </p>
             </div>
-            <div className="flex items-center text-xs font-semibold text-brand-400 gap-1">
-              <span>Узнать подробнее</span>
+            <OpenTenderButton className="flex items-center text-xs font-semibold text-brand-400 hover:text-brand-500 gap-1 self-start">
+              <span>Запросить смету</span>
               <i className="fa-solid fa-arrow-right" />
-            </div>
-          </Link>
+            </OpenTenderButton>
+          </div>
         </div>
       </section>
 

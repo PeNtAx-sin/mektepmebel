@@ -5,11 +5,9 @@ import { useCart } from "@/components/cart/CartProvider";
 import Link from "next/link";
 import { useState } from "react";
 
-// import { catalogMenu, mainNav, site } from "@/lib/site";
-import { catalogMenu, headerNav, site } from "@/lib/site";
+import { site, type MenuItem } from "@/lib/site";
 
-
-export default function Header() {
+export default function Header({ catalogMenu }: { catalogMenu: MenuItem[] }) {
   const [open, setOpen] = useState(false);
   const { count: cartCount } = useCart();
   const closeMenu = () => setOpen(false);
@@ -47,42 +45,35 @@ export default function Header() {
                 href="/catalog"
                 className="flex items-center gap-1 hover:text-school-blue transition font-semibold text-slate-900"
               >
-                Каталог{" "}
-                <i className="fa-solid fa-chevron-down text-xs transition group-hover:rotate-180" />
+                Каталог
+                {catalogMenu.length > 0 && (
+                  <i className="fa-solid fa-chevron-down text-xs transition group-hover:rotate-180" />
+                )}
               </Link>
-              <div className="absolute top-full left-0 w-72 bg-white rounded-xl shadow-xl border border-slate-100 opacity-0 invisible group-hover:opacity-100 group-hover:visible group-focus-within:opacity-100 group-focus-within:visible transition-all duration-200 py-3 z-50">
-                {catalogMenu.map((item) => (
-                  <div key={item.href}>
-                    <Link
-                      href={item.href}
-                      className="block px-4 py-2 hover:bg-slate-50 text-slate-700 hover:text-school-blue font-semibold"
-                    >
-                      {item.title}
-                    </Link>
-                    {item.children?.map((child) => (
+              {catalogMenu.length > 0 && (
+                <div className="absolute top-full left-0 w-72 bg-white rounded-xl shadow-xl border border-slate-100 opacity-0 invisible group-hover:opacity-100 group-hover:visible group-focus-within:opacity-100 group-focus-within:visible transition-all duration-200 py-3 z-50">
+                  {catalogMenu.map((item) => (
+                    <div key={item.href}>
                       <Link
-                        key={child.href}
-                        href={child.href}
-                        className="block px-6 py-1.5 text-xs hover:bg-slate-50 text-slate-600 hover:text-school-blue"
+                        href={item.href}
+                        className="block px-4 py-2 hover:bg-slate-50 text-slate-700 hover:text-school-blue font-semibold"
                       >
-                        ↳ {child.title}
+                        {item.title}
                       </Link>
-                    ))}
-                  </div>
-                ))}
-              </div>
+                      {item.children?.map((child) => (
+                        <Link
+                          key={child.href}
+                          href={child.href}
+                          className="block px-6 py-1.5 text-xs hover:bg-slate-50 text-slate-600 hover:text-school-blue"
+                        >
+                          ↳ {child.title}
+                        </Link>
+                      ))}
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
-
-            {/* {mainNav.slice(1).map((item) => ( */}
-            {headerNav.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className="hover:text-school-blue transition py-2"
-              >
-                {item.title}
-              </Link>
-            ))}
           </nav>
 
           {/* Кнопки справа */}
@@ -148,30 +139,27 @@ export default function Header() {
           >
             Каталог мебели
           </Link>
-          <div className="pl-4 space-y-2 border-l-2 border-slate-100 text-sm">
-            {catalogMenu.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                onClick={closeMenu}
-                className="block text-slate-600"
-              >
-                {item.title}
-              </Link>
-            ))}
-          </div>
-
-          {/* {mainNav.slice(1).map((item) => ( */}
-          {headerNav.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              onClick={closeMenu}
-              className="block w-full text-left font-medium py-1.5 text-slate-700 hover:text-school-blue"
-            >
-              {item.title}
-            </Link>
-          ))}
+          {catalogMenu.length > 0 && (
+            <div className="pl-4 space-y-2 border-l-2 border-slate-100 text-sm">
+              {catalogMenu.map((item) => (
+                <div key={item.href} className="space-y-2">
+                  <Link href={item.href} onClick={closeMenu} className="block text-slate-600">
+                    {item.title}
+                  </Link>
+                  {item.children?.map((child) => (
+                    <Link
+                      key={child.href}
+                      href={child.href}
+                      onClick={closeMenu}
+                      className="block pl-3 text-xs text-slate-500"
+                    >
+                      ↳ {child.title}
+                    </Link>
+                  ))}
+                </div>
+              ))}
+            </div>
+          )}
 
           <div className="pt-3 border-t border-slate-100 space-y-2">
             <button

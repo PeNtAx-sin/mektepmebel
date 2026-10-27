@@ -6,16 +6,31 @@ import Breadcrumbs, { type Crumb } from "@/components/catalog/Breadcrumbs";
 import ProductCard from "@/components/catalog/ProductCard";
 import ProductGallery from "@/components/catalog/ProductGallery";
 import JsonLd from "@/components/JsonLd";
+import OpenTenderButton from "@/components/OpenTenderButton";
 import {
   getAllCategories,
   getAllProductPaths,
   getProduct,
   getRelatedProducts,
 } from "@/lib/data";
-import { formatPrice, paragraphs } from "@/lib/format";
+import { formatPrice, paragraphs, vatLabel } from "@/lib/format";
 import { site } from "@/lib/site";
 
 type Props = { params: Promise<{ category: string; slug: string }> };
+
+/** Next передаёт slug из адреса закодированным (пробел — %20) */
+function decodeSlug(raw: string): string {
+  try {
+    return decodeURIComponent(raw);
+  } catch {
+    return raw;
+  }
+}
+
+// старые адреса со случайным пробелом в slug находят исправленный товар
+async function findProduct(slug: string) {
+  return (await getProduct(slug)) ?? (await getProduct(slug.trim()));
+}
 
 export async function generateStaticParams() {
   const paths = await getAllProductPaths();
@@ -24,7 +39,7 @@ export async function generateStaticParams() {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
-  const product = await getProduct(slug);
+  const product = await findProduct(decodeSlug(slug));
   if (!product) return {};
 
   const path = `/catalog/${product.categorySlug}/${product.slug}`;
@@ -50,14 +65,15 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function ProductPage({ params }: Props) {
-  const { category: categorySlug, slug } = await params;
+  const { category: categorySlug, slug: rawSlug } = await params;
+  const slug = decodeSlug(rawSlug);
 
-  const product = await getProduct(slug);
+  const product = await findProduct(slug);
   if (!product) notFound();
 
   // у товара один правильный адрес
-  if (product.categorySlug !== categorySlug) {
-    permanentRedirect(`/catalog/${product.categorySlug}/${product.slug}`);
+  if (product.categorySlug !== categorySlug || product.slug !== slug) {
+    permanentRedirect(`/catalog/${product.categorySlug}/${encodeURIComponent(product.slug)}`);
   }
 
   const [categories, related] = await Promise.all([
@@ -102,6 +118,12 @@ export default async function ProductPage({ params }: Props) {
         url,
         priceCurrency: "KZT",
         price: product.price,
+        priceSpecification: {
+          "@type": "UnitPriceSpecification",
+          price: product.price,
+          priceCurrency: "KZT",
+          valueAddedTaxIncluded: product.vatIncluded,
+        },
         availability: product.inStock
           ? "https://schema.org/InStock"
           : "https://schema.org/PreOrder",
@@ -117,7 +139,7 @@ export default async function ProductPage({ params }: Props) {
         <Breadcrumbs items={crumbs} />
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 bg-white p-6 sm:p-10 rounded-3xl border border-slate-200 shadow-sm">
-          <ProductGallery images={images} alt={product.title} />
+          <ProductGallery images={images} alt={product.imageAlt} />
 
           <div className="space-y-6">
             <div>
@@ -148,7 +170,7 @@ export default async function ProductPage({ params }: Props) {
                 <>
                   {formatPrice(product.price)}{" "}
                   <span className="text-xs font-normal text-slate-500">
-                    / шт (с НДС)
+                    / шт ({vatLabel(product.vatIncluded)})
                   </span>
                 </>
               ) : (
@@ -170,6 +192,7 @@ export default async function ProductPage({ params }: Props) {
                   categorySlug: product.categorySlug,
                   title: product.title,
                   price: product.price,
+                  vatIncluded: product.vatIncluded,
                 }}
               />
               <a
@@ -183,6 +206,18 @@ export default async function ProductPage({ params }: Props) {
             </div>
           </div>
         </div>
+
+        {!product.description && specs.length === 0 && (
+          <section className="mt-6 bg-white p-6 sm:p-8 rounded-3xl border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <p className="text-sm text-slate-600 leading-relaxed">
+              Размеры, материалы и ростовые группы уточните у менеджера — подготовим
+              спецификацию и коммерческое предложение.
+            </p>
+            <OpenTenderButton className="shrink-0 bg-slate-900 hover:bg-slate-800 text-white font-semibold px-5 py-3 rounded-xl text-sm transition">
+              Запросить характеристики
+            </OpenTenderButton>
+          </section>
+        )}
 
         {(product.description || specs.length > 0) && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">

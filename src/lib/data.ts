@@ -1,4 +1,7 @@
 import { client } from "@/sanity/lib/client";
+import { urlFor } from "@/sanity/lib/image";
+import type { SanityImageObject } from "@sanity/image-url/lib/types/types";
+import type { MenuItem } from "@/lib/site";
 
 export type Spec = { label: string; value: string };
 export type Faq = { question: string; answer: string };
@@ -23,15 +26,16 @@ export type Product = {
   title: string;
   categorySlug: string;
   price: number | null; // null = цена по запросу
+  vatIncluded: boolean; // price — с НДС (поле price) или без (поле priceVat)
   inStock: boolean;
   shortDescription: string;
   image: string | null;
+  imageAlt: string; // подпись к фото, по умолчанию название товара
   gallery: string[];
   description: string | null;
   specs: Spec[];
   seoTitle: string | null;
   seoDescription: string | null;
-  badge?: string; // зарезервировано, сейчас не используется
 };
 
 /* ---------- служебное ---------- */
@@ -45,24 +49,27 @@ async function fetchGroq<T>(
   return client.fetch<T>(query, params, { next: { revalidate: REVALIDATE_SECONDS } });
 }
 
-/** Ссылка на картинку Sanity с нужной шириной и современным форматом */
-export function sanityImage(url: string, width?: number): string;
-export function sanityImage(url: string | null | undefined, width?: number): string | null;
-export function sanityImage(url: string | null | undefined, width = 900) {
-  return url ? `${url}?w=${width}&auto=format&q=80` : null;
+type SanityImage = Partial<SanityImageObject> | null;
+
+// картинка вместе с кадрированием из Studio
+const IMAGE_FIELDS = `{ asset, crop, hotspot }`;
+
+/** Адрес картинки Sanity с учётом кадрирования; ширину и формат добавляет imageLoader */
+function imageUrl(image: SanityImage | undefined): string | null {
+  return image?.asset ? urlFor(image as SanityImageObject).url() : null;
 }
 
 /* ---------- категории ---------- */
 
 export async function getAllCategories(): Promise<Category[]> {
-  const rows = await fetchGroq<Category[]>(`
+  const rows = await fetchGroq<(Omit<Category, "image"> & { image: SanityImage })[]>(`
     *[_type == "category" && defined(slug.current)]
       | order(coalesce(sortOrder, 999) asc, title asc) {
       "id": _id,
       "slug": slug.current,
       title,
       "description": coalesce(shortDescription, ""),
-      "image": image.asset->url,
+      "image": image${IMAGE_FIELDS},
       "parentSlug": parent->slug.current,
       intro,
       bottomText,
@@ -71,13 +78,27 @@ export async function getAllCategories(): Promise<Category[]> {
       seoDescription
     }
   `);
-  return rows.map((c) => ({ ...c, image: sanityImage(c.image, 800) }));
+  return rows.map((c) => ({ ...c, image: imageUrl(c.image) }));
 }
 
 /** Основные категории (для главной) */
 export async function getCategories(): Promise<Category[]> {
   const all = await getAllCategories();
   return all.filter((c) => !c.parentSlug);
+}
+
+/** Меню каталога для шапки и подвала: основные категории с подкатегориями */
+export async function getCatalogMenu(): Promise<MenuItem[]> {
+  const all = await getAllCategories();
+  return all
+    .filter((c) => !c.parentSlug)
+    .map((c) => ({
+      title: c.title,
+      href: `/catalog/${c.slug}`,
+      children: all
+        .filter((child) => child.parentSlug === c.slug)
+        .map((child) => ({ title: child.title, href: `/catalog/${child.slug}` })),
+    }));
 }
 
 export async function getCategoryBySlug(slug: string): Promise<Category | null> {
@@ -87,9 +108,10 @@ export async function getCategoryBySlug(slug: string): Promise<Category | null> 
 
 /* ---------- товары ---------- */
 
-type RawProduct = Omit<Product, "image" | "gallery"> & {
-  image: string | null;
-  gallery: string[];
+type RawProduct = Omit<Product, "image" | "imageAlt" | "gallery"> & {
+  image: SanityImage;
+  imageAlt: string | null;
+  gallery: SanityImage[];
 };
 
 const PRODUCT_BASE = `*[_type == "product" && defined(slug.current)]`;
@@ -108,11 +130,14 @@ const PRODUCT_PROJECTION = `{
       category == "spec" => "kabinety"
     )
   ),
-  price,
+  // «Цена с НДС», если заполнена, иначе «Цена без НДС»
+  "price": coalesce(price, priceVat),
+  "vatIncluded": defined(price) || !defined(priceVat),
   "inStock": coalesce(inStock, true),
   "shortDescription": coalesce(shortDescription, ""),
-  "image": image.asset->url,
-  "gallery": coalesce(gallery[].asset->url, []),
+  "image": image${IMAGE_FIELDS},
+  "imageAlt": image.alt,
+  "gallery": coalesce(gallery[defined(asset)]${IMAGE_FIELDS}, []),
   description,
   "specs": coalesce(specs, []),
   seoTitle,
@@ -122,8 +147,10 @@ const PRODUCT_PROJECTION = `{
 function mapProduct(p: RawProduct): Product {
   return {
     ...p,
-    image: sanityImage(p.image, 900),
-    gallery: p.gallery.map((url) => sanityImage(url, 1200)),
+    title: p.title.trim(),
+    image: imageUrl(p.image),
+    imageAlt: p.imageAlt?.trim() || p.title.trim(),
+    gallery: p.gallery.map(imageUrl).filter((url): url is string => url !== null),
   };
 }
 
@@ -174,8 +201,11 @@ export async function getFeaturedProduct(): Promise<Product | null> {
   return all[0] ?? null;
 }
 
+/** Сколько товаров в каталоге: те же условия, что в getProducts() */
 export async function getProductsCount(): Promise<number> {
-  return fetchGroq<number>(`count(*[_type == "product" && defined(slug.current)])`);
+  return fetchGroq<number>(
+    `count(${PRODUCT_BASE} ${PRODUCT_PROJECTION}[defined(categorySlug)])`,
+  );
 }
 
 /** Пары «категория + товар» для генерации страниц и sitemap */
@@ -184,4 +214,65 @@ export async function getAllProductPaths(): Promise<
 > {
   const products = await getProducts();
   return products.map((p) => ({ categorySlug: p.categorySlug, slug: p.slug }));
+}
+/* ---------- проекты ---------- */
+
+export type HeroSlide = {
+  src: string;
+  alt: string;
+  title: string;
+  location: string | null;
+  isVisualization: boolean;
+  position: string; // object-position из точки Hotspot в Studio
+};
+
+const MAX_HERO_SLIDES = 12;
+
+type Crop = { top: number; bottom: number; left: number; right: number };
+type Hotspot = { x: number; y: number };
+
+/** Точка Hotspot как CSS object-position — в координатах уже обрезанного (crop) фото */
+function hotspotPosition(image: SanityImage): string {
+  const hotspot = image?.hotspot as Hotspot | undefined;
+  if (!hotspot) return "50% 50%";
+  const crop = (image?.crop as Crop | undefined) ?? { top: 0, bottom: 0, left: 0, right: 0 };
+  const toPercent = (value: number, start: number, end: number) =>
+    Math.round(Math.min(1, Math.max(0, (value - start) / (1 - start - end))) * 100);
+  return `${toPercent(hotspot.x, crop.left, crop.right)}% ${toPercent(hotspot.y, crop.top, crop.bottom)}%`;
+}
+
+/** Фото проектов для слайдера на первом экране главной */
+export async function getHeroSlides(): Promise<HeroSlide[]> {
+  const projects = await fetchGroq<
+    {
+      title: string;
+      location: string | null;
+      isVisualization: boolean | null;
+      photos: (SanityImage & { alt?: string })[] | null;
+    }[]
+  >(`
+    *[_type == "project" && showOnHome != false && count(photos) > 0]
+      | order(coalesce(sortOrder, 999) asc, _createdAt desc) {
+      title,
+      location,
+      isVisualization,
+      "photos": photos[defined(asset)]{ asset, crop, hotspot, alt }
+    }
+  `);
+
+  return projects
+    .flatMap((p) =>
+      (p.photos ?? []).map((photo) => {
+        return {
+          src: imageUrl(photo),
+          alt: photo?.alt?.trim() || p.title,
+          title: p.title,
+          location: p.location,
+          isVisualization: Boolean(p.isVisualization),
+          position: hotspotPosition(photo),
+        };
+      }),
+    )
+    .filter((s): s is HeroSlide => s.src !== null)
+    .slice(0, MAX_HERO_SLIDES);
 }

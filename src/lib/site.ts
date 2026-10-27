@@ -12,34 +12,12 @@ export const site = {
 
 export type MenuItem = { title: string; href: string; children?: MenuItem[] };
 
-export const catalogMenu: MenuItem[] = [
-  {
-    title: "Школьные парты",
-    href: "/catalog/party",
-    children: [
-      { title: "Парта одноместная", href: "/catalog/odnomestnye-party" },
-      { title: "Парта двухместная", href: "/catalog/dvuhmestnye-party" },
-      { title: "Парта регулируемая по высоте", href: "/catalog/reguliruemye-party" },
-    ],
-  },
-  { title: "Школьные стулья", href: "/catalog/stulya" },
-  { title: "Комплекты (парта + стул)", href: "/catalog/komplekty" },
-  { title: "Мебель для кабинетов", href: "/catalog/kabinety" },
-  { title: "Мебель для детских садов", href: "/catalog/detskie-sady" },
-];
+// Меню каталога строится из категорий Sanity: getCatalogMenu() в src/lib/data.ts
 
+// TODO: вернуть в меню, когда появятся страницы:
+// /dlya-shkol (Для школ и тендеры), /dostavka-i-oplata (Доставка и оплата),
+// /o-kompanii (О компании), /blog (Блог), /kontakty (Контакты)
 export const mainNav: MenuItem[] = [
   { title: "Главная", href: "/" },
-  { title: "Для школ и тендеры", href: "/dlya-shkol" },
-  { title: "Доставка и оплата", href: "/dostavka-i-oplata" },
-  { title: "О компании", href: "/o-kompanii" },
-  { title: "Блог", href: "/blog" },
-  { title: "Контакты", href: "/kontakty" },
-];
-
-// Пункты верхнего меню (подвал использует полный mainNav)
-export const headerNav: MenuItem[] = [
-  { title: "Для школ и тендеры", href: "/dlya-shkol" },
-  { title: "Блог", href: "/blog" },
-  { title: "Контакты", href: "/kontakty" },
+  { title: "Каталог", href: "/catalog" },
 ];
