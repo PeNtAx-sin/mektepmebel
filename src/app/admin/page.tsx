@@ -845,6 +845,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
+import OfferBuilder from "@/components/admin/OfferBuilder";
 import { supabase } from "@/lib/supabase";
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";
 
@@ -868,7 +870,7 @@ export default function AdminDashboard() {
   const [isLoading, setIsLoading] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
 
-  const [activeTab, setActiveTab] = useState<'form' | 'data' | 'third'>('form');
+  const [activeTab, setActiveTab] = useState<'form' | 'data' | 'offer'>('form');
 
   // Форма
   const [companyName, setCompanyName] = useState("");
@@ -882,8 +884,9 @@ export default function AdminDashboard() {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("all"); 
   const [sortBy, setSortBy] = useState("date_desc"); 
+  const [showDebtors, setShowDebtors] = useState(false); // раскрытый список должников под карточкой «Долг»
 
-  const COLORS = ["#85C78F", "#F2727B"];
+  const COLORS = ["#10b981", "#f43f5e"]; // получено / долг
 
   const fetchSales = async () => {
     const { data, error } = await supabase.from("sales").select("*").order("created_at", { ascending: false });
@@ -1010,6 +1013,26 @@ export default function AdminDashboard() {
   const totalRevenue = sales.reduce((acc, sale) => acc + Number(sale.paid_amount), 0);
   const totalDebt = sales.reduce((acc, sale) => acc + (Number(sale.amount) - Number(sale.paid_amount)), 0);
   const totalExpected = totalRevenue + totalDebt;
+
+  // Должники: долг по всем сделкам компании, от большего к меньшему
+  const debtorsMap = new Map<string, { name: string; debt: number; deals: number; since: string }>();
+  for (const sale of sales) {
+    const debt = Number(sale.amount) - Number(sale.paid_amount);
+    if (debt <= 0) continue;
+    const key = sale.company_name.trim().toLowerCase();
+    const d = debtorsMap.get(key) ?? { name: sale.company_name.trim(), debt: 0, deals: 0, since: sale.sale_date };
+    d.debt += debt;
+    d.deals += 1;
+    if (sale.sale_date < d.since) d.since = sale.sale_date;
+    debtorsMap.set(key, d);
+  }
+  const debtors = [...debtorsMap.values()].sort((a, b) => b.debt - a.debt);
+
+  const showDebtorSales = (name: string) => {
+    setSearchTerm(name);
+    setFilterStatus("debtors");
+    document.getElementById("sales-list")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
   const hasData = totalRevenue > 0 || totalDebt > 0;
 
   const paidPercentage = totalExpected > 0 ? (totalRevenue / totalExpected) * 100 : 0;
@@ -1024,214 +1047,409 @@ export default function AdminDashboard() {
 
   // ================= РЕНДЕР КОМПОНЕНТОВ =================
 
+  const fmt = (n: number) => `${Number(n || 0).toLocaleString("ru-RU")}\u00a0₸`; // ₸ не отрывается от суммы
+
+  const inputCls =
+    "w-full px-4 py-3 text-base text-slate-800 placeholder:text-slate-400 bg-white border border-slate-200 rounded-xl focus:border-school-blue focus:ring-4 focus:ring-school-blue/10 outline-none transition";
+  const labelCls = "text-xs font-semibold uppercase tracking-wider text-slate-500";
+
+  const STATUS_META: Record<string, { label: string; icon: string; chip: string; stripe: string }> = {
+    paid: { label: "Оплачено", icon: "fa-circle-check", chip: "bg-emerald-50 text-emerald-700 border-emerald-200", stripe: "bg-emerald-500" },
+    partial: { label: "Частично", icon: "fa-hourglass-half", chip: "bg-amber-50 text-amber-700 border-amber-200", stripe: "bg-amber-400" },
+    debt: { label: "В долг", icon: "fa-circle-xmark", chip: "bg-rose-50 text-rose-700 border-rose-200", stripe: "bg-rose-500" },
+  };
+
+  const PAYMENT_OPTIONS = [
+    { value: "invoice", label: "По счёту", icon: "fa-file-invoice" },
+    { value: "cash", label: "Наличными", icon: "fa-money-bill-wave" },
+  ];
+
+  const TABS = [
+    { id: "form" as const, label: "Ввод данных", short: "Ввод", icon: "fa-pen-to-square", title: "Новая реализация", subtitle: "Запишите отгрузку: покупатель, позиции и оплата" },
+    { id: "data" as const, label: "Финансы и база", short: "База", icon: "fa-chart-pie", title: "Финансы и база", subtitle: "Поступления, долги и все сделки" },
+    { id: "offer" as const, label: "Конструктор КП", short: "КП", icon: "fa-file-word", title: "Коммерческое предложение", subtitle: "Соберите КП из товаров каталога и скачайте в Word" },
+  ];
+  const currentTab = TABS.find((t) => t.id === activeTab) ?? TABS[0];
+
+  // Переключатель-«таблетки» вместо выпадающего списка: то же значение, удобнее с телефона
+  const segmented = (
+    options: { value: string; label: string; icon: string }[],
+    value: string,
+    onChange: (v: string) => void,
+    activeCls: (v: string) => string,
+  ) => (
+    <div className="grid gap-2" style={{ gridTemplateColumns: `repeat(${options.length}, minmax(0, 1fr))` }}>
+      {options.map((o) => (
+        <button
+          key={o.value}
+          type="button"
+          onClick={() => onChange(o.value)}
+          className={`flex items-center justify-center gap-2 px-3 py-3 rounded-xl border text-sm font-semibold transition ${
+            value === o.value ? activeCls(o.value) : "bg-white border-slate-200 text-slate-500 hover:border-slate-300 hover:text-slate-700"
+          }`}
+        >
+          <i className={`fa-solid ${o.icon}`} />
+          {o.label}
+        </button>
+      ))}
+    </div>
+  );
+
   const renderForm = () => (
-    <div className="bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-slate-100">
-      <h2 className="text-xl font-semibold text-slate-800 mb-6">Новая реализация</h2>
-      <form onSubmit={handleAddSale} className="space-y-6">
+    <form onSubmit={handleAddSale} className="space-y-5">
+      {/* Покупатель */}
+      <section className="bg-white p-5 md:p-7 rounded-3xl shadow-sm border border-slate-200/70 space-y-5">
+        <div className="flex items-center gap-3">
+          <span className="w-10 h-10 rounded-xl bg-school-blue/10 text-school-blue flex items-center justify-center">
+            <i className="fa-solid fa-building" />
+          </span>
+          <h2 className="text-lg font-bold text-slate-900">Покупатель</h2>
+        </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-          <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium text-slate-500">Организация / БИН</label>
-            <input required value={companyName} onChange={(e) => setCompanyName(e.target.value)} type="text" placeholder="ТОО / ИП / Школа" 
-              className="w-full px-4 py-3 text-base text-slate-800 placeholder:text-slate-400 border border-slate-200 rounded-xl focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 outline-none transition-all" />
+          <div className="flex flex-col gap-2">
+            <label className={labelCls}>Организация / БИН</label>
+            <input required value={companyName} onChange={(e) => setCompanyName(e.target.value)} type="text" placeholder="ТОО / ИП / Школа" className={inputCls} />
           </div>
-          <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium text-slate-500">Дата отгрузки</label>
-            <input required value={saleDate} onChange={(e) => setSaleDate(e.target.value)} type="date" 
-              className="w-full px-4 py-3 text-base text-slate-800 border border-slate-200 rounded-xl focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 outline-none transition-all" />
+          <div className="flex flex-col gap-2">
+            <label className={labelCls}>Дата отгрузки</label>
+            <input required value={saleDate} onChange={(e) => setSaleDate(e.target.value)} type="date" className={inputCls} />
+          </div>
+        </div>
+      </section>
+
+      {/* Позиции */}
+      <section className="bg-white p-5 md:p-7 rounded-3xl shadow-sm border border-slate-200/70 space-y-4">
+        <div className="flex items-center gap-3">
+          <span className="w-10 h-10 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center">
+            <i className="fa-solid fa-boxes-stacked" />
+          </span>
+          <div>
+            <h2 className="text-lg font-bold text-slate-900">Проданные позиции</h2>
+            <p className="text-xs text-slate-400">Укажите цены — итог посчитается сам</p>
           </div>
         </div>
 
-        <div className="bg-slate-50 p-5 rounded-xl border border-slate-100 space-y-4">
-          <label className="text-sm font-medium text-slate-600 block mb-2">Проданные позиции</label>
-          {items.map((item, index) => (
-            <div key={index} className="flex flex-col xl:flex-row gap-3">
-              <input required value={item.name} onChange={(e) => handleItemChange(index, "name", e.target.value)} type="text" placeholder="Название товара" 
-                className="flex-1 px-4 py-3 text-base text-slate-800 placeholder:text-slate-400 border border-slate-200 rounded-xl focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 outline-none bg-white min-w-0" />
-              
-              <div className="flex gap-2 w-full xl:w-auto">
-                <input value={item.price} onChange={(e) => handleItemChange(index, "price", e.target.value)} type="number" min="0" placeholder="Цена (опц.)" 
-                  className="w-full xl:w-32 px-4 py-3 text-base text-slate-800 placeholder:text-slate-400 border border-slate-200 rounded-xl focus:border-indigo-400 outline-none bg-white min-w-0" />
-                
-                <input required value={item.quantity} onChange={(e) => handleItemChange(index, "quantity", Number(e.target.value))} type="number" min="1" placeholder="Шт." 
-                  className="w-20 xl:w-24 px-4 py-3 text-base text-slate-800 border border-slate-200 rounded-xl text-center focus:border-indigo-400 outline-none bg-white min-w-0" />
-                
-                {items.length > 1 && (
-                  <button type="button" onClick={() => handleRemoveItem(index)} className="px-3 py-3 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors">✕</button>
-                )}
-              </div>
+        {items.map((item, index) => (
+          <div key={index} className="flex flex-col xl:flex-row gap-3 p-3 rounded-2xl bg-slate-50 border border-slate-100">
+            <div className="flex gap-3 flex-1 min-w-0">
+              <span className="shrink-0 w-8 h-12 flex items-center justify-center text-sm font-bold text-slate-400">{index + 1}</span>
+              <input required value={item.name} onChange={(e) => handleItemChange(index, "name", e.target.value)} type="text" placeholder="Название товара" className={`${inputCls} min-w-0`} />
             </div>
-          ))}
-          <button type="button" onClick={handleAddItem} className="text-sm text-indigo-600 font-medium hover:text-indigo-800 transition-colors mt-2">
-            + Добавить позицию
-          </button>
+
+            <div className="flex gap-2 w-full xl:w-auto pl-11 xl:pl-0">
+              <div className="relative w-full xl:w-36">
+                <input value={item.price} onChange={(e) => handleItemChange(index, "price", e.target.value)} type="number" min="0" placeholder="Цена (опц.)" className={`${inputCls} pr-8 min-w-0`} />
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm pointer-events-none">₸</span>
+              </div>
+
+              <div className="relative w-24 shrink-0">
+                <input required value={item.quantity} onChange={(e) => handleItemChange(index, "quantity", Number(e.target.value))} type="number" min="1" placeholder="Шт." className={`${inputCls} text-center pr-8 min-w-0`} />
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs pointer-events-none">шт</span>
+              </div>
+
+              {items.length > 1 && (
+                <button type="button" onClick={() => handleRemoveItem(index)} aria-label="Убрать позицию" className="shrink-0 w-12 rounded-xl text-slate-400 hover:text-rose-500 hover:bg-rose-50 transition-colors">
+                  <i className="fa-solid fa-trash-can" />
+                </button>
+              )}
+            </div>
+          </div>
+        ))}
+
+        <button type="button" onClick={handleAddItem} className="w-full py-3 rounded-2xl border-2 border-dashed border-slate-200 text-sm font-semibold text-school-blue hover:border-school-blue/40 hover:bg-school-blue/5 transition">
+          <i className="fa-solid fa-plus mr-2" />
+          Добавить позицию
+        </button>
+      </section>
+
+      {/* Оплата */}
+      <section className="bg-white p-5 md:p-7 rounded-3xl shadow-sm border border-slate-200/70 space-y-5">
+        <div className="flex items-center gap-3">
+          <span className="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
+            <i className="fa-solid fa-wallet" />
+          </span>
+          <h2 className="text-lg font-bold text-slate-900">Оплата</h2>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 border-t border-slate-100 pt-6">
-          <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium text-slate-500">Итого (₸)</label>
-            <input required value={amount} onChange={(e) => setAmount(e.target.value)} type="number" placeholder="0" 
-              className="w-full px-4 py-3 text-lg font-semibold text-slate-800 border border-slate-200 rounded-xl focus:border-indigo-400 outline-none transition-colors" />
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+          <div className="flex flex-col gap-2">
+            <label className={labelCls}>Способ оплаты</label>
+            {segmented(PAYMENT_OPTIONS, paymentMethod, setPaymentMethod, () => "bg-school-blue/10 border-school-blue/40 text-school-blue")}
           </div>
-          
-          <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium text-slate-500">Способ оплаты</label>
-            <select value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)} 
-              className="w-full px-4 py-3 text-base text-slate-800 border border-slate-200 rounded-xl focus:border-indigo-400 outline-none bg-white cursor-pointer">
-              <option value="invoice">📄 По счёту</option>
-              <option value="cash">💵 Наличными</option>
-            </select>
+          <div className="flex flex-col gap-2">
+            <label className={labelCls}>Статус</label>
+            {segmented(
+              Object.entries(STATUS_META).map(([value, m]) => ({ value, label: m.label, icon: m.icon })),
+              status,
+              setStatus,
+              (v) => STATUS_META[v].chip,
+            )}
           </div>
+        </div>
 
-          <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium text-slate-500">Статус</label>
-            <select value={status} onChange={(e) => setStatus(e.target.value)} 
-              className="w-full px-4 py-3 text-base text-slate-800 border border-slate-200 rounded-xl focus:border-indigo-400 outline-none bg-white cursor-pointer">
-              <option value="paid">✅ Оплачено</option>
-              <option value="partial">⏳ Частично</option>
-              <option value="debt">❌ В долг</option>
-            </select>
+        <div className={`grid grid-cols-1 ${status === "partial" ? "sm:grid-cols-2" : ""} gap-5`}>
+          <div className="flex flex-col gap-2">
+            <label className={labelCls}>Итого</label>
+            <div className="relative">
+              <input required value={amount} onChange={(e) => setAmount(e.target.value)} type="number" placeholder="0" className={`${inputCls} text-2xl font-black py-4 pr-10`} />
+              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 text-lg font-bold pointer-events-none">₸</span>
+            </div>
           </div>
 
           {status === "partial" && (
-            <div className="flex flex-col gap-1.5">
-              <label className="text-sm font-medium text-orange-500">Внесли (₸)</label>
-              <input required value={paidAmount} onChange={(e) => setPaidAmount(e.target.value)} type="number" placeholder="0" 
-                className="w-full px-4 py-3 text-lg font-semibold text-orange-800 border border-orange-200 bg-orange-50 rounded-xl focus:border-orange-400 outline-none" />
+            <div className="flex flex-col gap-2">
+              <label className={`${labelCls} !text-amber-600`}>Внесли</label>
+              <div className="relative">
+                <input required value={paidAmount} onChange={(e) => setPaidAmount(e.target.value)} type="number" placeholder="0" className="w-full px-4 py-4 pr-10 text-2xl font-black text-amber-800 border border-amber-200 bg-amber-50 rounded-xl focus:border-amber-400 focus:ring-4 focus:ring-amber-100 outline-none transition" />
+                <span className="absolute right-4 top-1/2 -translate-y-1/2 text-amber-400 text-lg font-bold pointer-events-none">₸</span>
+              </div>
             </div>
           )}
         </div>
+      </section>
 
-        <div className="flex justify-end pt-4">
-          <button disabled={isLoading} type="submit" className="w-full md:w-auto px-8 py-3 text-base font-medium bg-[#6672E5] text-white rounded-xl shadow-sm hover:bg-[#5560c9] transition-all disabled:opacity-50">
-            {isLoading ? "Сохранение..." : "Сохранить заказ"}
-          </button>
-        </div>
-      </form>
-    </div>
+      <div className="flex justify-end">
+        <button disabled={isLoading} type="submit" className="w-full md:w-auto px-10 py-4 text-base font-bold bg-brand-500 text-white rounded-2xl shadow-lg shadow-brand-500/25 hover:bg-brand-600 transition disabled:opacity-50 flex items-center justify-center gap-2">
+          <i className={`fa-solid ${isLoading ? "fa-spinner fa-spin" : "fa-floppy-disk"}`} />
+          {isLoading ? "Сохранение..." : "Сохранить заказ"}
+        </button>
+      </div>
+    </form>
   );
 
   const renderDataAndCharts = () => (
     <div className="space-y-6">
-      <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
-        <h3 className="text-sm font-medium text-slate-500 mb-1">Общая ожидаемая сумма</h3>
-        <p className="text-2xl font-semibold text-slate-800 mb-6">{totalExpected.toLocaleString("ru-RU")} ₸</p>
-        
-        <div className="w-full h-3 rounded-full flex overflow-hidden mb-4 bg-slate-100">
-          <div style={{ width: `${paidPercentage}%`, backgroundColor: COLORS[0] }} className="h-full transition-all duration-500" />
-          <div style={{ width: `${debtPercentage}%`, backgroundColor: COLORS[1] }} className="h-full transition-all duration-500" />
-        </div>
-
-        <div className="flex justify-between items-center text-sm">
-          <div>
-            <p className="text-slate-400 mb-1">Получено</p>
-            <p className="font-semibold" style={{ color: COLORS[0] }}>{totalRevenue.toLocaleString("ru-RU")} ₸</p>
+      {/* Сводка */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
+        <div className="col-span-2 sm:col-span-1 bg-gradient-to-br from-school-blue to-slate-900 text-white p-5 rounded-3xl shadow-lg">
+          <div className="flex items-center justify-between text-blue-200 text-xs font-semibold uppercase tracking-wider">
+            Общая ожидаемая сумма <i className="fa-solid fa-sack-dollar text-base" />
           </div>
-          <div className="text-right">
-            <p className="text-slate-400 mb-1">К получению (Долг)</p>
-            <p className="font-semibold" style={{ color: COLORS[1] }}>{totalDebt.toLocaleString("ru-RU")} ₸</p>
-          </div>
+          <p className="text-xl md:text-2xl xl:text-3xl font-black mt-3 whitespace-nowrap">{fmt(totalExpected)}</p>
+          <p className="text-xs text-blue-200 mt-1">Сделок: {sales.length}</p>
         </div>
+        <div className="bg-white p-4 sm:p-5 rounded-3xl shadow-sm border border-slate-200/70">
+          <div className="flex items-center justify-between gap-2 text-slate-400 text-[10px] sm:text-xs font-semibold uppercase tracking-wider">
+            Получено <i className="fa-solid fa-arrow-trend-up text-base" style={{ color: COLORS[0] }} />
+          </div>
+          <p className="text-base sm:text-xl md:text-2xl font-black mt-3 whitespace-nowrap" style={{ color: COLORS[0] }}>{fmt(totalRevenue)}</p>
+          <p className="text-xs text-slate-400 mt-1">{paidPercentage.toFixed(0)}% от общей суммы</p>
+        </div>
+        <button
+          type="button"
+          onClick={() => setShowDebtors((v) => !v)}
+          aria-expanded={showDebtors}
+          aria-controls="debtors-panel"
+          className={`text-left bg-white p-4 sm:p-5 rounded-3xl shadow-sm border transition hover:shadow-md ${showDebtors ? "border-rose-300 ring-4 ring-rose-100" : "border-slate-200/70 hover:border-rose-200"}`}
+        >
+          <div className="flex items-center justify-between gap-2 text-slate-400 text-[10px] sm:text-xs font-semibold uppercase tracking-wider">
+            Долг <i className="fa-solid fa-triangle-exclamation text-base" style={{ color: COLORS[1] }} />
+          </div>
+          <p className="text-base sm:text-xl md:text-2xl font-black mt-3 whitespace-nowrap" style={{ color: COLORS[1] }}>{fmt(totalDebt)}</p>
+          <p className="text-xs text-slate-400 mt-1 flex items-center justify-between gap-2">
+            <span>{debtPercentage.toFixed(0)}% от общей суммы</span>
+            <span className="font-semibold text-rose-500 whitespace-nowrap">
+              {debtors.length} <i className={`fa-solid fa-chevron-down text-[10px] ml-0.5 transition-transform ${showDebtors ? "rotate-180" : ""}`} />
+            </span>
+          </p>
+        </button>
+      </div>
 
-        <div className="h-48 w-full mt-6">
-          {!isMounted ? null : hasData ? (
-             <ResponsiveContainer width="100%" height="100%">
-               <PieChart>
-                 <Pie data={mainChartData} innerRadius={50} outerRadius={70} paddingAngle={2} dataKey="value">
-                   {mainChartData.map((entry, index) => <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />)}
-                 </Pie>
-                 <Tooltip formatter={customTooltipFormatter} contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
-               </PieChart>
-             </ResponsiveContainer>
+      {/* Должники — раскрываются по клику на карточку «Долг» */}
+      {showDebtors && (
+        <div id="debtors-panel" className="bg-white rounded-3xl shadow-sm border border-rose-200 overflow-hidden">
+          <div className="flex items-center justify-between gap-3 px-5 py-4 border-b border-slate-100">
+            <div>
+              <h3 className="font-bold text-slate-900">Должники</h3>
+              <p className="text-xs text-slate-400">От большего долга к меньшему · нажмите, чтобы открыть сделки</p>
+            </div>
+            <button type="button" onClick={() => setShowDebtors(false)} aria-label="Свернуть" className="w-9 h-9 shrink-0 rounded-xl text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition">
+              <i className="fa-solid fa-xmark" />
+            </button>
+          </div>
+
+          {debtors.length === 0 ? (
+            <p className="px-5 py-8 text-center text-sm text-slate-400">
+              <i className="fa-solid fa-face-smile text-2xl text-emerald-400 block mb-2" />
+              Должников нет
+            </p>
           ) : (
-            <div className="h-full flex items-center justify-center text-slate-400 text-sm">Нет данных</div>
+            <ol className="divide-y divide-slate-100 max-h-96 overflow-y-auto">
+              {debtors.map((d, i) => (
+                <li key={d.name}>
+                  <button type="button" onClick={() => showDebtorSales(d.name)} className="w-full flex items-center gap-3 px-5 py-3 text-left hover:bg-rose-50/50 transition">
+                    <span className="w-6 shrink-0 text-xs font-bold text-slate-300 text-right">{i + 1}</span>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-sm text-slate-800 truncate">{d.name}</p>
+                      <div className="mt-1.5 h-1.5 rounded-full bg-slate-100 overflow-hidden">
+                        <div className="h-full rounded-full" style={{ width: `${(d.debt / debtors[0].debt) * 100}%`, backgroundColor: COLORS[1] }} />
+                      </div>
+                      <p className="text-[11px] text-slate-400 mt-1">
+                        {d.deals} {d.deals % 10 === 1 && d.deals % 100 !== 11 ? "сделка" : [2, 3, 4].includes(d.deals % 10) && ![12, 13, 14].includes(d.deals % 100) ? "сделки" : "сделок"} · с {new Date(d.since).toLocaleDateString("ru-RU")}
+                      </p>
+                    </div>
+                    <span className="shrink-0 font-black text-sm sm:text-base text-rose-600 whitespace-nowrap">{fmt(d.debt)}</span>
+                  </button>
+                </li>
+              ))}
+            </ol>
           )}
+        </div>
+      )}
+
+      {/* Диаграмма */}
+      <div className="bg-white p-5 md:p-6 rounded-3xl shadow-sm border border-slate-200/70 grid grid-cols-1 md:grid-cols-[220px_1fr] gap-6 items-center">
+        <div className="relative h-52 w-full">
+          {!isMounted ? null : hasData ? (
+            <>
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie data={mainChartData} innerRadius={62} outerRadius={88} paddingAngle={3} cornerRadius={6} stroke="none" dataKey="value">
+                    {mainChartData.map((entry, index) => <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />)}
+                  </Pie>
+                  <Tooltip formatter={customTooltipFormatter} contentStyle={{ borderRadius: "12px", border: "none", boxShadow: "0 10px 25px -5px rgb(0 0 0 / 0.15)" }} />
+                </PieChart>
+              </ResponsiveContainer>
+              <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                <span className="text-3xl font-black text-slate-900">{paidPercentage.toFixed(0)}%</span>
+                <span className="text-[11px] text-slate-400">получено</span>
+              </div>
+            </>
+          ) : (
+            <div className="h-full flex flex-col items-center justify-center text-slate-300 gap-2">
+              <i className="fa-solid fa-chart-pie text-4xl" />
+              <span className="text-sm text-slate-400">Нет данных</span>
+            </div>
+          )}
+        </div>
+
+        <div className="space-y-4">
+          <div className="w-full h-3 rounded-full flex overflow-hidden bg-slate-100">
+            <div style={{ width: `${paidPercentage}%`, backgroundColor: COLORS[0] }} className="h-full transition-all duration-500" />
+            <div style={{ width: `${debtPercentage}%`, backgroundColor: COLORS[1] }} className="h-full transition-all duration-500" />
+          </div>
+          <div className="grid grid-cols-2 gap-3 text-sm">
+            <div className="flex items-start gap-2.5">
+              <span className="mt-1.5 w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: COLORS[0] }} />
+              <div>
+                <p className="text-slate-400 text-xs">Получено</p>
+                <p className="font-bold text-slate-800">{fmt(totalRevenue)}</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-2.5">
+              <span className="mt-1.5 w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: COLORS[1] }} />
+              <div>
+                <p className="text-slate-400 text-xs">К получению (Долг)</p>
+                <p className="font-bold text-slate-800">{fmt(totalDebt)}</p>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
-      <div className="flex flex-col sm:flex-row gap-3">
-        <input type="text" placeholder="Поиск компании..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)}
-          className="flex-1 px-4 py-2.5 text-sm text-slate-800 placeholder:text-slate-400 border border-slate-200 rounded-xl focus:border-indigo-400 outline-none bg-white" />
+      {/* Поиск и фильтры */}
+      <div id="sales-list" className="scroll-mt-4 flex flex-col sm:flex-row gap-3">
+        <div className="relative flex-1">
+          <i className="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-sm" />
+          <input type="text" placeholder="Поиск компании..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full pl-11 pr-4 py-3 text-sm text-slate-800 placeholder:text-slate-400 border border-slate-200 rounded-2xl focus:border-school-blue focus:ring-4 focus:ring-school-blue/10 outline-none bg-white transition" />
+        </div>
         <div className="flex gap-3">
-          <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)} className="px-4 py-2.5 text-sm text-slate-700 border border-slate-200 rounded-xl outline-none bg-white">
+          <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)} className="flex-1 sm:flex-none px-4 py-3 text-sm font-medium text-slate-700 border border-slate-200 rounded-2xl outline-none bg-white cursor-pointer focus:border-school-blue">
             <option value="all">Все статусы</option>
             <option value="debtors">Только должники</option>
           </select>
-          <select value={sortBy} onChange={(e) => setSortBy(e.target.value)} className="px-4 py-2.5 text-sm text-slate-700 border border-slate-200 rounded-xl outline-none bg-white">
+          <select value={sortBy} onChange={(e) => setSortBy(e.target.value)} className="flex-1 sm:flex-none px-4 py-3 text-sm font-medium text-slate-700 border border-slate-200 rounded-2xl outline-none bg-white cursor-pointer focus:border-school-blue">
             <option value="date_desc">Новые</option>
             <option value="amount_desc">Сумма</option>
           </select>
         </div>
       </div>
 
+      {/* Сделки */}
       <div className="space-y-4">
+        {processedSales.length === 0 && (
+          <div className="bg-white rounded-3xl border border-dashed border-slate-200 p-10 text-center text-slate-400">
+            <i className="fa-regular fa-folder-open text-4xl mb-3 block text-slate-300" />
+            <p className="text-sm">{sales.length === 0 ? "Пока нет ни одной сделки" : "Ничего не найдено"}</p>
+          </div>
+        )}
+
         {processedSales.map((sale) => {
           const debt = Number(sale.amount) - Number(sale.paid_amount);
-          
+          const meta = STATUS_META[sale.status] ?? STATUS_META.paid;
+
           const createdStr = sale.created_at ? new Date(sale.created_at).toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute:'2-digit' }) : '';
           const updatedStr = sale.updated_at ? new Date(sale.updated_at).toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute:'2-digit' }) : '';
 
           return (
-            <div key={sale.id} className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex flex-col gap-4">
-              <div className="flex justify-between items-start">
-                <div>
-                  <h3 className="font-semibold text-lg text-slate-800">{sale.company_name}</h3>
-                  <div className="flex items-center gap-2 mt-1">
-                    <span className="text-xs text-slate-400">Отгрузка: {new Date(sale.sale_date).toLocaleDateString('ru-RU')}</span>
-                    
-                    {/* ИНТЕРАКТИВНЫЙ БЕЙДЖ С ВЫБОРОМ СПОСОБА ОПЛАТЫ */}
-                    <select 
-                      value={sale.payment_method || 'invoice'} 
-                      onChange={(e) => handlePaymentMethodChange(sale.id, e.target.value)}
-                      className={`text-[10px] font-semibold tracking-wide uppercase px-2 py-0.5 rounded-md outline-none cursor-pointer border-none
-                        ${sale.payment_method === 'cash' ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200' : 'bg-blue-100 text-blue-700 hover:bg-blue-200'}
-                      `}
-                    >
-                      <option value="invoice">ПО СЧЁТУ</option>
-                      <option value="cash">НАЛИЧНЫЕ</option>
-                    </select>
+            <div key={sale.id} className="relative bg-white rounded-3xl shadow-sm border border-slate-200/70 overflow-hidden hover:shadow-md transition-shadow">
+              <span className={`absolute left-0 inset-y-0 w-1.5 ${meta.stripe}`} />
+              <div className="p-5 pl-6 flex flex-col gap-4">
+                <div className="flex justify-between items-start gap-4">
+                  <div className="flex items-start gap-3 min-w-0">
+                    <span className="shrink-0 w-11 h-11 rounded-2xl bg-slate-100 text-slate-600 font-black flex items-center justify-center uppercase">
+                      {sale.company_name.trim().charAt(0) || "?"}
+                    </span>
+                    <div className="min-w-0">
+                      <h3 className="font-bold text-base sm:text-lg text-slate-900 leading-snug break-words">{sale.company_name}</h3>
+                      <div className="flex flex-wrap items-center gap-2 mt-1.5">
+                        <span className="inline-flex items-center gap-1.5 text-xs text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md">
+                          <i className="fa-regular fa-calendar text-[10px]" />
+                          {new Date(sale.sale_date).toLocaleDateString('ru-RU')}
+                        </span>
 
-                  </div>
-                </div>
-                <div className="text-right">
-                  <div className="font-semibold text-slate-800">{sale.amount.toLocaleString("ru-RU")} ₸</div>
-                  {sale.status !== 'paid' && (
-                    <div className="text-xs font-medium mt-1 text-[#F2727B]">Долг: {debt.toLocaleString("ru-RU")} ₸</div>
-                  )}
-                </div>
-              </div>
-
-              <div className="text-sm text-slate-600 bg-slate-50 px-4 py-3 rounded-xl">
-                {sale.items.map((item, idx) => (
-                  <div key={idx} className="flex justify-between mb-1 last:mb-0 items-center">
-                    <span className="font-medium">{item.name}</span>
-                    <div className="flex gap-3 text-slate-400 text-xs">
-                      {item.price && <span>{Number(item.price).toLocaleString("ru-RU")} ₸</span>}
-                      <span>x{item.quantity}</span>
+                        {/* ИНТЕРАКТИВНЫЙ БЕЙДЖ С ВЫБОРОМ СПОСОБА ОПЛАТЫ */}
+                        <select
+                          value={sale.payment_method || 'invoice'}
+                          onChange={(e) => handlePaymentMethodChange(sale.id, e.target.value)}
+                          className={`text-[11px] font-bold tracking-wide uppercase px-2 py-0.5 rounded-md outline-none cursor-pointer border-none
+                            ${sale.payment_method === 'cash' ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200' : 'bg-blue-100 text-blue-700 hover:bg-blue-200'}
+                          `}
+                        >
+                          <option value="invoice">ПО СЧЁТУ</option>
+                          <option value="cash">НАЛИЧНЫЕ</option>
+                        </select>
+                      </div>
                     </div>
                   </div>
-                ))}
-              </div>
-
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-3 pt-2 border-t border-slate-50">
-                <div className="flex flex-col text-[10px] text-slate-400">
-                  {createdStr && <span>Добавлен: {createdStr}</span>}
-                  {updatedStr && updatedStr !== createdStr && <span>Изменен: {updatedStr}</span>}
+                  <div className="text-right shrink-0">
+                    <div className="font-black text-lg text-slate-900 whitespace-nowrap">{fmt(sale.amount)}</div>
+                    {sale.status !== 'paid' && (
+                      <div className="inline-block text-xs font-semibold mt-1 px-2 py-0.5 rounded-md bg-rose-50 text-rose-600 whitespace-nowrap">Долг: {fmt(debt)}</div>
+                    )}
+                  </div>
                 </div>
-                
-                <div className="flex items-center gap-3 w-full sm:w-auto">
-                   <select value={sale.status} onChange={(e) => handleStatusChange(sale.id, e.target.value, sale.amount, sale.paid_amount)}
-                      className={`text-sm py-1.5 px-3 rounded-lg border outline-none cursor-pointer font-medium flex-1 sm:flex-none
-                        ${sale.status === 'paid' ? 'bg-[#85C78F]/10 text-[#55945e] border-[#85C78F]/30' : ''}
-                        ${sale.status === 'partial' ? 'bg-orange-50 text-orange-600 border-orange-200' : ''}
-                        ${sale.status === 'debt' ? 'bg-[#F2727B]/10 text-[#d15059] border-[#F2727B]/30' : ''}
-                      `}>
+
+                <div className="text-sm text-slate-600 bg-slate-50 rounded-2xl divide-y divide-slate-100">
+                  {sale.items.map((item, idx) => (
+                    <div key={idx} className="flex justify-between gap-3 px-4 py-2.5 items-center">
+                      <span className="font-medium text-slate-700 min-w-0 break-words">{item.name}</span>
+                      <div className="flex gap-3 text-slate-400 text-xs whitespace-nowrap">
+                        {item.price && <span>{Number(item.price).toLocaleString("ru-RU")} ₸</span>}
+                        <span className="font-semibold text-slate-500">× {item.quantity}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                  <div className="flex flex-col text-[11px] text-slate-400 gap-0.5">
+                    {createdStr && <span><i className="fa-regular fa-clock mr-1" />Добавлен: {createdStr}</span>}
+                    {updatedStr && updatedStr !== createdStr && <span><i className="fa-solid fa-pen mr-1" />Изменен: {updatedStr}</span>}
+                  </div>
+
+                  <div className="flex items-center gap-2 w-full sm:w-auto">
+                    <select value={sale.status} onChange={(e) => handleStatusChange(sale.id, e.target.value, sale.amount, sale.paid_amount)}
+                      className={`text-sm py-2 px-3 rounded-xl border outline-none cursor-pointer font-semibold flex-1 sm:flex-none ${meta.chip}`}>
                       <option value="paid">Оплачено</option>
                       <option value="partial">Частично</option>
                       <option value="debt">В долг</option>
                     </select>
-                    <button onClick={() => handleDelete(sale.id)} className="text-xs font-medium text-slate-400 hover:text-red-500 transition-colors">
-                       Удалить
+                    <button onClick={() => handleDelete(sale.id)} aria-label="Удалить" title="Удалить" className="w-10 h-10 shrink-0 rounded-xl text-slate-400 hover:text-rose-500 hover:bg-rose-50 transition-colors">
+                      <i className="fa-solid fa-trash-can" />
                     </button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -1242,57 +1460,68 @@ export default function AdminDashboard() {
   );
 
   return (
-    <div className="min-h-screen bg-[#F8F9FB] text-slate-800 font-sans pb-24 lg:pb-8 flex">
-      <div className="hidden lg:flex w-64 flex-col bg-[#F0F3F7] border-r border-slate-200 fixed h-full left-0 top-0">
-        <div className="p-6">
-          <h1 className="text-xl font-bold text-slate-800 tracking-tight">CRM</h1>
+    <div className="min-h-screen bg-slate-50 text-slate-800 font-sans pb-28 lg:pb-8 flex">
+      {/* Боковое меню (компьютер) */}
+      <aside className="hidden lg:flex w-64 flex-col bg-white border-r border-slate-200 fixed h-full left-0 top-0">
+        <div className="p-6 flex items-center gap-3">
+          <div className="w-11 h-11 bg-school-blue rounded-xl flex items-center justify-center text-white shadow-md">
+            <i className="fa-solid fa-graduation-cap text-lg" />
+          </div>
+          <div>
+            <h1 className="text-base font-black tracking-tight text-slate-900 uppercase leading-tight">Mektep Mebel</h1>
+            <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">CRM · учёт продаж</p>
+          </div>
         </div>
-        <nav className="flex-1 px-4 space-y-2">
-          <button onClick={() => setActiveTab('form')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors ${activeTab === 'form' ? 'bg-white text-[#6672E5] shadow-sm' : 'text-slate-500 hover:bg-slate-200/50'}`}>
-            <span className="text-lg">📝</span> Ввод данных
-          </button>
-          <button onClick={() => setActiveTab('data')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors ${activeTab === 'data' ? 'bg-white text-[#6672E5] shadow-sm' : 'text-slate-500 hover:bg-slate-200/50'}`}>
-            <span className="text-lg">📊</span> Финансы и база
-          </button>
-          <button onClick={() => setActiveTab('third')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors ${activeTab === 'third' ? 'bg-white text-[#6672E5] shadow-sm' : 'text-slate-500 hover:bg-slate-200/50'}`}>
-            <span className="text-lg">⚙️</span> Настройки
-          </button>
+        <nav className="flex-1 px-4 space-y-1.5">
+          {TABS.map((tab) => (
+            <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-colors ${activeTab === tab.id ? 'bg-school-blue text-white shadow-md shadow-school-blue/20' : 'text-slate-500 hover:bg-slate-100 hover:text-slate-800'}`}>
+              <i className={`fa-solid ${tab.icon} w-5 text-center`} /> {tab.label}
+            </button>
+          ))}
         </nav>
-      </div>
+        <div className="p-4">
+          <Link href="/" className="flex items-center justify-center gap-2 px-4 py-3 bg-slate-100 text-slate-600 rounded-xl text-sm font-semibold hover:bg-slate-200 transition-colors">
+            <i className="fa-solid fa-arrow-up-right-from-square text-xs" /> На сайт
+          </Link>
+        </div>
+      </aside>
 
-      <div className="flex-1 lg:ml-64 p-4 md:p-8 max-w-5xl mx-auto w-full">
-        <div className="flex items-center justify-between mb-8 lg:hidden">
-          <h1 className="text-2xl font-bold text-slate-800">CRM</h1>
-          <a href="/" className="text-sm text-[#6672E5] font-medium">На сайт →</a>
+      <main className="flex-1 lg:ml-64 p-4 md:p-8 max-w-5xl mx-auto w-full">
+        {/* Шапка (телефон) */}
+        <div className="flex items-center justify-between mb-6 lg:hidden">
+          <div className="flex items-center gap-2.5">
+            <div className="w-9 h-9 bg-school-blue rounded-xl flex items-center justify-center text-white">
+              <i className="fa-solid fa-graduation-cap" />
+            </div>
+            <span className="text-base font-black text-slate-900 uppercase">CRM</span>
+          </div>
+          <Link href="/" className="text-sm text-school-blue font-semibold flex items-center gap-1.5">
+            На сайт <i className="fa-solid fa-arrow-right text-xs" />
+          </Link>
         </div>
 
-        <div className="hidden lg:flex justify-end mb-8">
-            <a href="/" className="px-4 py-2 bg-white border border-slate-200 text-slate-600 rounded-lg text-sm font-medium hover:bg-slate-50 transition-colors">На сайт →</a>
+        <div className="mb-6">
+          <h2 className="text-2xl md:text-3xl font-black text-slate-900">{currentTab.title}</h2>
+          <p className="text-sm text-slate-500 mt-1">{currentTab.subtitle}</p>
         </div>
 
         {activeTab === 'form' && renderForm()}
         {activeTab === 'data' && renderDataAndCharts()}
-        {activeTab === 'third' && (
-          <div className="bg-white p-8 rounded-2xl shadow-sm border border-slate-100 text-center">
-            <p className="text-slate-500">Здесь можно разместить профиль, настройки доступа или экспорт отчетов.</p>
-          </div>
-        )}
-      </div>
+        {/* вкладка остаётся в DOM, чтобы набранное КП не терялось при переключении */}
+        <div hidden={activeTab !== 'offer'}>
+          <OfferBuilder />
+        </div>
+      </main>
 
-      <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-100 flex justify-around shadow-[0_-4px_20px_-10px_rgba(0,0,0,0.1)] z-50 px-2 pb-safe pt-2">
-        <button onClick={() => setActiveTab('form')} className={`flex flex-col items-center p-2 min-w-[80px] transition-colors ${activeTab === 'form' ? 'text-[#6672E5]' : 'text-slate-400'}`}>
-          <span className="text-xl mb-1">📝</span>
-          <span className="text-[10px] font-medium">Ввод</span>
-        </button>
-        <button onClick={() => setActiveTab('data')} className={`flex flex-col items-center p-2 min-w-[80px] transition-colors ${activeTab === 'data' ? 'text-[#6672E5]' : 'text-slate-400'}`}>
-          <span className="text-xl mb-1">📊</span>
-          <span className="text-[10px] font-medium">База</span>
-        </button>
-        <button onClick={() => setActiveTab('third')} className={`flex flex-col items-center p-2 min-w-[80px] transition-colors ${activeTab === 'third' ? 'text-[#6672E5]' : 'text-slate-400'}`}>
-          <span className="text-xl mb-1">⚙️</span>
-          <span className="text-[10px] font-medium">Настройки</span>
-        </button>
-      </div>
+      {/* Нижнее меню (телефон) */}
+      <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur border-t border-slate-200 flex justify-around z-50 px-2 pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
+        {TABS.map((tab) => (
+          <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`flex flex-col items-center gap-1 px-4 py-1.5 min-w-[84px] rounded-2xl transition-colors ${activeTab === tab.id ? 'text-school-blue bg-school-blue/10' : 'text-slate-400'}`}>
+            <i className={`fa-solid ${tab.icon} text-lg`} />
+            <span className="text-[11px] font-semibold">{tab.short}</span>
+          </button>
+        ))}
+      </nav>
     </div>
   );
 }

@@ -13,6 +13,7 @@
     "@sanity/image-url": "^1.2.0",
     "@sanity/vision": "^4.22.0",
     "@supabase/supabase-js": "^2.105.3",
+    "docx": "9.10.0",
     "next": "16.1.6",
     "next-sanity": "^11.6.12",
     "react": "19.2.3",
