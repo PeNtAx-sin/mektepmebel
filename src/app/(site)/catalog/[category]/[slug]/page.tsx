@@ -6,14 +6,18 @@ import Breadcrumbs, { type Crumb } from "@/components/catalog/Breadcrumbs";
 import ProductCard from "@/components/catalog/ProductCard";
 import ProductGallery from "@/components/catalog/ProductGallery";
 import JsonLd from "@/components/JsonLd";
+import RelatedLinks from "@/components/seo/RelatedLinks";
 import OpenTenderButton from "@/components/OpenTenderButton";
 import {
   getAllCategories,
   getAllProductPaths,
   getProduct,
   getRelatedProducts,
+  HOME_CAFE_MENU_ITEM,
 } from "@/lib/data";
 import { formatPrice, paragraphs, vatLabel } from "@/lib/format";
+import { imageObject, ORGANIZATION_ID } from "@/lib/schema";
+import { fitTitle, pageMetadata } from "@/lib/seo";
 import { site } from "@/lib/site";
 
 type Props = { params: Promise<{ category: string; slug: string }> };
@@ -42,26 +46,26 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const product = await findProduct(decodeSlug(slug));
   if (!product) return {};
 
-  const path = `/catalog/${product.categorySlug}/${product.slug}`;
-  const title = product.seoTitle ?? `${product.title} — купить`;
-  const description =
-    product.seoDescription ||
-    product.shortDescription ||
-    `${product.title}. Цена, характеристики, доставка по Казахстану.`;
+  const price =
+    product.price != null
+      ? `Цена ${formatPrice(product.price)} (${vatLabel(product.vatIncluded)}).`
+      : "Цена по запросу.";
+  const usage = isHomeCafeChair(product) ? " Подходит для школы, дома, кафе и офиса." : "";
 
-  return {
-    title,
-    description,
-    alternates: { canonical: path },
-    openGraph: {
-      title,
-      description,
-      url: path,
-      siteName: "MektepMebel.kz",
-      locale: "ru_RU",
-      images: product.image ? [{ url: product.image }] : undefined,
-    },
-  };
+  return pageMetadata({
+    title: fitTitle(product.seoTitle, `${product.title} — купить`, product.title),
+    description:
+      product.seoDescription ||
+      `${product.title}. ${price}${usage} ${product.shortDescription || "Характеристики и фото на сайте."} Доставка по Казахстану.`,
+    path: `/catalog/${product.categorySlug}/${product.slug}`,
+    image: product.image,
+    imageAlt: product.imageAlt,
+  });
+}
+
+/** Стул, который продаём и для дома / кафе: отмечен в Studio или любой стул, кроме кресла */
+function isHomeCafeChair(product: { forHomeCafe: boolean; categorySlug: string; title: string }) {
+  return product.forHomeCafe || (product.categorySlug === "stulya" && !/кресл/i.test(product.title));
 }
 
 export default async function ProductPage({ params }: Props) {
@@ -107,9 +111,10 @@ export default async function ProductPage({ params }: Props) {
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "Product",
+    "@id": `${url}#product`,
     name: product.title,
-    description: product.shortDescription || undefined,
-    image: images.length > 0 ? images : undefined,
+    description: product.shortDescription || product.description || undefined,
+    image: images.length > 0 ? images.map((src) => imageObject(src, product.imageAlt)) : undefined,
     category: category?.title,
     url,
     ...(product.price != null && {
@@ -128,7 +133,7 @@ export default async function ProductPage({ params }: Props) {
           ? "https://schema.org/InStock"
           : "https://schema.org/PreOrder",
         itemCondition: "https://schema.org/NewCondition",
-        seller: { "@type": "Organization", name: site.name },
+        seller: { "@id": ORGANIZATION_ID },
       },
     }),
   };
@@ -198,7 +203,7 @@ export default async function ProductPage({ params }: Props) {
               <a
                 href={waHref}
                 target="_blank"
-                rel="noopener noreferrer"
+                rel="nofollow noopener noreferrer"
                 className="bg-school-blue hover:bg-blue-800 text-white font-bold px-6 py-3.5 rounded-xl shadow transition text-sm flex items-center justify-center gap-2"
               >
                 <i className="fa-brands fa-whatsapp text-lg" /> Написать в WhatsApp
@@ -251,6 +256,15 @@ export default async function ProductPage({ params }: Props) {
             )}
           </div>
         )}
+
+        <RelatedLinks
+          links={[
+            ...(category ? [{ title: `${category.title}: все модели`, href: `/catalog/${category.slug}` }] : []),
+            ...(parent ? [{ title: parent.title, href: `/catalog/${parent.slug}` }] : []),
+            ...(isHomeCafeChair(product) ? [HOME_CAFE_MENU_ITEM] : []),
+            { title: "Весь каталог", href: "/catalog" },
+          ]}
+        />
 
         {related.length > 0 && (
           <section className="mt-12">

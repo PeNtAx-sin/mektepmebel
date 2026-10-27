@@ -1,3 +1,4 @@
+import type { PortableTextBlock } from "next-sanity";
 import { client } from "@/sanity/lib/client";
 import { urlFor } from "@/sanity/lib/image";
 import type { SanityImageObject } from "@sanity/image-url/lib/types/types";
@@ -36,6 +37,8 @@ export type Product = {
   specs: Spec[];
   seoTitle: string | null;
   seoDescription: string | null;
+  forHomeCafe: boolean; // показывать на странице «Пластиковые стулья для дома и кафе»
+  updatedAt: string;
 };
 
 /* ---------- служебное ---------- */
@@ -90,7 +93,7 @@ export async function getCategories(): Promise<Category[]> {
 /** Меню каталога для шапки и подвала: основные категории с подкатегориями */
 export async function getCatalogMenu(): Promise<MenuItem[]> {
   const all = await getAllCategories();
-  return all
+  const menu: MenuItem[] = all
     .filter((c) => !c.parentSlug)
     .map((c) => ({
       title: c.title,
@@ -99,7 +102,14 @@ export async function getCatalogMenu(): Promise<MenuItem[]> {
         .filter((child) => child.parentSlug === c.slug)
         .map((child) => ({ title: child.title, href: `/catalog/${child.slug}` })),
     }));
+  return [...menu, HOME_CAFE_MENU_ITEM];
 }
+
+/** Отдельная страница под запросы «пластиковые стулья для дома / кафе» */
+export const HOME_CAFE_MENU_ITEM: MenuItem = {
+  title: "Пластиковые стулья для дома и кафе",
+  href: "/plastikovye-stulya",
+};
 
 export async function getCategoryBySlug(slug: string): Promise<Category | null> {
   const all = await getAllCategories();
@@ -141,7 +151,9 @@ const PRODUCT_PROJECTION = `{
   description,
   "specs": coalesce(specs, []),
   seoTitle,
-  seoDescription
+  seoDescription,
+  "forHomeCafe": coalesce(forHomeCafe, false),
+  "updatedAt": _updatedAt
 }`;
 
 function mapProduct(p: RawProduct): Product {
@@ -215,6 +227,68 @@ export async function getAllProductPaths(): Promise<
   const products = await getProducts();
   return products.map((p) => ({ categorySlug: p.categorySlug, slug: p.slug }));
 }
+/**
+ * Стулья для страницы «Пластиковые стулья для дома, кафе и офиса»: отмеченные
+ * в Studio галочкой «Подходит для дома и кафе». Пока ни один не отмечен —
+ * все стулья из категории «Школьные стулья», кроме кресел.
+ */
+export async function getHomeCafeChairs(): Promise<Product[]> {
+  const products = await getProducts();
+  const marked = products.filter((p) => p.forHomeCafe);
+  if (marked.length > 0) return marked;
+  return products.filter((p) => p.categorySlug === "stulya" && !/кресл/i.test(p.title));
+}
+
+/* ---------- статьи ---------- */
+
+export type ArticleCard = {
+  slug: string;
+  title: string;
+  excerpt: string;
+  cover: string | null;
+  coverAlt: string;
+  publishedAt: string;
+  updatedAt: string;
+};
+
+export type Article = ArticleCard & {
+  body: PortableTextBlock[];
+  seoTitle: string | null;
+  seoDescription: string | null;
+  categories: { title: string; href: string }[];
+};
+
+const ARTICLE_BASE = `*[_type == "article" && defined(slug.current) && defined(publishedAt)]`;
+const ARTICLE_CARD = `
+  "slug": slug.current,
+  title,
+  "excerpt": coalesce(excerpt, ""),
+  "cover": cover${IMAGE_FIELDS},
+  "coverAlt": coalesce(cover.alt, title),
+  publishedAt,
+  "updatedAt": _updatedAt`;
+
+type RawArticleCard = Omit<ArticleCard, "cover"> & { cover: SanityImage };
+
+export async function getArticles(): Promise<ArticleCard[]> {
+  const rows = await fetchGroq<RawArticleCard[]>(`${ARTICLE_BASE} | order(publishedAt desc) { ${ARTICLE_CARD} }`);
+  return rows.map((a) => ({ ...a, cover: imageUrl(a.cover) }));
+}
+
+export async function getArticle(slug: string): Promise<Article | null> {
+  const row = await fetchGroq<(Omit<Article, "cover"> & { cover: SanityImage }) | null>(
+    `${ARTICLE_BASE}[slug.current == $slug][0] {
+      ${ARTICLE_CARD},
+      "body": coalesce(body, []),
+      seoTitle,
+      seoDescription,
+      "categories": coalesce(categories[]->{ title, "href": "/catalog/" + slug.current }, [])
+    }`,
+    { slug },
+  );
+  return row ? { ...row, cover: imageUrl(row.cover) } : null;
+}
+
 /* ---------- проекты ---------- */
 
 export type ProjectPhoto = {

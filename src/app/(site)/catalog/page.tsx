@@ -3,13 +3,14 @@ import Breadcrumbs from "@/components/catalog/Breadcrumbs";
 import CatalogSidebar from "@/components/catalog/CatalogSidebar";
 import CatalogSections, { type CatalogSection } from "@/components/catalog/CatalogSections";
 import { getAllCategories, getProducts } from "@/lib/data";
+import { pageMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = {
-  title: "Каталог школьной мебели",
+export const metadata: Metadata = pageMetadata({
+  title: "Каталог школьной мебели и стульев",
   description:
-    "Общий каталог школьной мебели: парты, стулья, парты для кабинетов химии и физики, спецмебель. Цены, характеристики, доставка по Казахстану.",
-  alternates: { canonical: "/catalog" },
-};
+    "Каталог: школьные парты, пластиковые стулья для школы, дома и кафе, парты для химии и физики, спецмебель. Цены, характеристики, доставка по Казахстану.",
+  path: "/catalog",
+});
 
 export default async function CatalogPage() {
   const [categories, products] = await Promise.all([getAllCategories(), getProducts()]);

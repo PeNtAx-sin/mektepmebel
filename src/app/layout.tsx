@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter, Geist_Mono } from "next/font/google";
 import "@fortawesome/fontawesome-free/css/all.min.css";
 import "./globals.css";
+import { site } from "@/lib/site";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -15,54 +16,38 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  // Базовый URL для правильной работы ссылок на картинки
-  metadataBase: new URL("https://mektepmebel.kz"),
+  // Базовый адрес: из него строятся canonical и ссылки на картинки
+  metadataBase: new URL(site.url),
+  applicationName: site.name,
 
   title: {
-    template: "%s | Mektep Mebel",
-    default: "Школьная мебель в Алматы | MektepMebel.kz",
+    template: `%s | ${site.name}`,
+    default: "Школьная мебель и пластиковые стулья | Mektep Mebel",
   },
   description:
-    "Качественные школьные парты, стулья и мебель для учебных заведений. Производство и доставка по Алматы и всему Казахстану. Каталог 2026.",
+    "Школьные парты и стулья, пластиковые стулья для дома, кафе и офиса, мебель для кабинетов химии и физики. Доставка по Казахстану.",
 
   verification: {
     google: "ac3HwWJbcy0OVJLnP_1dXNZl0MRZMjJIiBfhgg-Ve9k",
     yandex: "b532cb4728ed5701",
   },
 
-  keywords: [
-    "школьная мебель",
-    "школьная мебель алматы",
-    "школьная мебель казахстан",
-    "школьная парта",
-    "купить парту алматы",
-    "школьные стулья",
-    "мебель для школы",
-    "оборудование классов",
-    "mektep mebel",
-    "mektepmebel.kz",
-  ],
-
+  // Каждая страница задаёт свои openGraph и canonical через pageMetadata() из lib/seo.ts;
+  // картинка по умолчанию — src/app/opengraph-image.tsx
   openGraph: {
-    title: "Школьная мебель в Казахстане | Mektep Mebel",
-    description: "Парты, стулья и оснащение школ под ключ. Доставка по Казахстану.",
-    url: "https://mektepmebel.kz",
-    siteName: "MektepMebel.kz",
-    images: [
-      {
-        url: "/og-image.jpg", // файл должен лежать в public/og-image.jpg
-        width: 1200,
-        height: 630,
-        alt: "Школьная мебель Mektep Mebel",
-      },
-    ],
+    siteName: site.name,
     locale: "ru_RU",
     type: "website",
   },
+  twitter: { card: "summary_large_image" },
 
-  icons: {
-    icon: "/favicon.ico",
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: { index: true, follow: true, "max-image-preview": "large", "max-snippet": -1 },
   },
+  formatDetection: { telephone: false },
+  icons: { icon: "/favicon.ico" },
 };
 
 export default function RootLayout({

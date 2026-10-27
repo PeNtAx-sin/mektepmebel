@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { site, type MenuItem } from "@/lib/site";
 
-export default function Footer({ catalogMenu }: { catalogMenu: MenuItem[] }) {
+export default function Footer({ catalogMenu, showBlog }: { catalogMenu: MenuItem[]; showBlog: boolean }) {
   const year = new Date().getFullYear();
 
   return (
@@ -21,7 +21,7 @@ export default function Footer({ catalogMenu }: { catalogMenu: MenuItem[] }) {
         </div>
 
         <div>
-          <h4 className="font-bold text-white mb-4">Каталог</h4>
+          <h2 className="font-bold text-white mb-4">Каталог</h2>
           <ul className="space-y-2 text-xs">
             <li>
               <Link href="/catalog" className="hover:text-white transition">
@@ -35,13 +35,20 @@ export default function Footer({ catalogMenu }: { catalogMenu: MenuItem[] }) {
                 </Link>
               </li>
             ))}
+            {showBlog && (
+              <li>
+                <Link href="/blog" className="hover:text-white transition">
+                  Полезные статьи
+                </Link>
+              </li>
+            )}
           </ul>
         </div>
 
         {/* TODO: колонка «Компания», когда появятся страницы из mainNav (см. site.ts) */}
 
         <div>
-          <h4 className="font-bold text-white mb-4">Контакты</h4>
+          <h2 className="font-bold text-white mb-4">Контакты</h2>
           <div className="space-y-2 text-xs">
             <p>
               <i className="fa-solid fa-phone text-brand-500 mr-2" />

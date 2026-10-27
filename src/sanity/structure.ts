@@ -53,4 +53,5 @@ export const structure: StructureResolver = (S) =>
       S.documentTypeListItem('category').title('Категории'),
       S.divider(),
       S.documentTypeListItem('project').title('Готовые проекты'),
+      S.documentTypeListItem('article').title('Статьи').icon(() => '📝'),
     ])

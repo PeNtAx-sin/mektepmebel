@@ -5,12 +5,17 @@ import Breadcrumbs, { type Crumb } from "@/components/catalog/Breadcrumbs";
 import CatalogSidebar from "@/components/catalog/CatalogSidebar";
 import ProductGrid from "@/components/catalog/ProductGrid";
 import JsonLd from "@/components/JsonLd";
+import FaqSection from "@/components/seo/FaqSection";
+import RelatedLinks from "@/components/seo/RelatedLinks";
 import {
   getAllCategories,
   getCategoryBySlug,
   getProductsByCategory,
 } from "@/lib/data";
 import { paragraphs } from "@/lib/format";
+import { itemListSchema } from "@/lib/schema";
+import { fitTitle, pageMetadata } from "@/lib/seo";
+import { categorySeo } from "@/lib/seo-content";
 
 type Props = { params: Promise<{ category: string }> };
 
@@ -26,15 +31,19 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   const products = await getProductsByCategory(slug);
 
-  return {
-    title: category.seoTitle ?? `${category.title} — купить в Казахстане`,
+  const defaults = categorySeo[slug];
+
+  return pageMetadata({
+    title: fitTitle(category.seoTitle, defaults?.seoTitle, `${category.title} — купить в Казахстане`, category.title),
     description:
       category.seoDescription ??
+      defaults?.seoDescription ??
       `${category.title}: цены, характеристики и доставка по Казахстану. Запросите смету.`,
-    alternates: { canonical: `/catalog/${slug}` },
+    path: `/catalog/${slug}`,
+    image: category.image,
     // пустые категории не показываем в поиске
-    robots: products.length === 0 ? { index: false, follow: true } : undefined,
-  };
+    noindex: products.length === 0,
+  });
 }
 
 export default async function CategoryPage({ params }: Props) {
@@ -51,7 +60,12 @@ export default async function CategoryPage({ params }: Props) {
     ? categories.find((c) => c.slug === category.parentSlug)
     : undefined;
   const children = categories.filter((c) => c.parentSlug === slug);
-  const faq = category.faq.filter((f) => f.question && f.answer);
+  // тексты из Studio, а если поле пустое — по умолчанию из lib/seo-content.ts
+  const defaults = categorySeo[slug];
+  const intro = category.intro ?? defaults?.intro;
+  const bottomText = category.bottomText ?? defaults?.bottomText;
+  const faq = category.faq.some((f) => f.question && f.answer) ? category.faq : (defaults?.faq ?? []);
+  const related = (defaults?.related ?? []).filter((l) => l.href !== `/catalog/${slug}`);
 
   const crumbs: Crumb[] = [
     { name: "Главная", href: "/" },
@@ -73,8 +87,8 @@ export default async function CategoryPage({ params }: Props) {
               <h1 className="text-2xl sm:text-3xl font-black text-slate-900">
                 {category.title}
               </h1>
-              {category.intro &&
-                paragraphs(category.intro).map((text, i) => (
+              {intro &&
+                paragraphs(intro).map((text, i) => (
                   <p key={i} className="text-sm text-slate-600 leading-relaxed">
                     {text}
                   </p>
@@ -97,44 +111,19 @@ export default async function CategoryPage({ params }: Props) {
 
             <ProductGrid products={products} />
 
-            {category.bottomText && (
+            {products.length > 0 && <JsonLd data={itemListSchema(category.title, `/catalog/${slug}`, products)} />}
+
+            {bottomText && (
               <section className="mt-10 bg-white p-6 sm:p-8 rounded-3xl border border-slate-200 space-y-4 text-sm text-slate-600 leading-relaxed">
-                {paragraphs(category.bottomText).map((text, i) => (
+                <h2 className="text-xl font-black text-slate-900">{category.title}: как выбрать</h2>
+                {paragraphs(bottomText).map((text, i) => (
                   <p key={i}>{text}</p>
                 ))}
               </section>
             )}
 
-            {faq.length > 0 && (
-              <section className="mt-10 space-y-3">
-                <h2 className="text-2xl font-black text-slate-900">Частые вопросы</h2>
-                {faq.map((f, i) => (
-                  <details
-                    key={i}
-                    className="group bg-white border border-slate-200 rounded-2xl p-5"
-                  >
-                    <summary className="cursor-pointer font-semibold text-slate-900 text-sm list-none flex items-center justify-between gap-4">
-                      {f.question}
-                      <i className="fa-solid fa-chevron-down text-xs text-slate-400 transition group-open:rotate-180" />
-                    </summary>
-                    <p className="mt-3 text-sm text-slate-600 leading-relaxed">
-                      {f.answer}
-                    </p>
-                  </details>
-                ))}
-                <JsonLd
-                  data={{
-                    "@context": "https://schema.org",
-                    "@type": "FAQPage",
-                    mainEntity: faq.map((f) => ({
-                      "@type": "Question",
-                      name: f.question,
-                      acceptedAnswer: { "@type": "Answer", text: f.answer },
-                    })),
-                  }}
-                />
-              </section>
-            )}
+            <FaqSection faq={faq} />
+            <RelatedLinks links={related} />
           </div>
         </div>
       </div>

@@ -6,21 +6,24 @@ import OpenTenderButton from "@/components/OpenTenderButton";
 import {
   getCategories,
   getFeaturedProduct,
+  getHomeCafeChairs,
+  HOME_CAFE_MENU_ITEM,
   getProductsCount,
   getProjects,
   getRoomShowcase,
 } from "@/lib/data";
 import Image from "next/image";
 import { formatPrice, vatLabel } from "@/lib/format";
+import { pageMetadata } from "@/lib/seo";
+import { site } from "@/lib/site";
 
-export const metadata: Metadata = {
-  title: {
-    absolute: "Mektep Mebel — Школьная и учебная мебель в Казахстане по ГОСТу",
-  },
+export const metadata: Metadata = pageMetadata({
+  title: "Mektep Mebel — школьная мебель и пластиковые стулья",
+  absoluteTitle: true,
   description:
-    "Школьные парты и стулья, парты для кабинетов химии и физики, спецмебель. Доставка по Казахстану, документы для госзакупок. Запросите смету.",
-  alternates: { canonical: "/" },
-};
+    "Школьные парты и стулья, пластиковые стулья для дома, кафе и офиса, парты для кабинетов химии и физики, спецмебель. Доставка по Казахстану. Запросите смету.",
+  path: "/",
+});
 
 // TODO: заменить реальными данными компании
 const trustBadges = [
@@ -52,12 +55,14 @@ const advantages = [
 ];
 
 export default async function HomePage() {
-  const [categories, showcase, projects, productsCount] = await Promise.all([
+  const [categories, showcase, projects, productsCount, homeCafeChairs] = await Promise.all([
     getCategories(),
     getRoomShowcase(),
     getProjects(),
     getProductsCount(),
+    getHomeCafeChairs(),
   ]);
+  const homeCafeChair = homeCafeChairs.find((p) => p.image);
   // пока в Studio нет 3D-кабинетов, на первом экране — карточка товара
   const featured = showcase ? null : await getFeaturedProduct();
 
@@ -74,8 +79,8 @@ export default async function HomePage() {
             </span>
 
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black tracking-tight leading-[1.1]">
-              Комфортная учеба <span className="text-brand-400">начинается</span> с
-              правильной парты
+              Школьная мебель для <span className="text-brand-400">комфортной</span>{" "}
+              учёбы
             </h1>
 
             <p className="text-slate-300 text-base sm:text-lg max-w-xl leading-relaxed">
@@ -210,6 +215,40 @@ export default async function HomePage() {
             </Link>
           ))}
 
+          {/* Отдельная страница под запросы «пластиковые стулья для дома / кафе» */}
+          <Link
+            href={HOME_CAFE_MENU_ITEM.href}
+            className="group bg-white rounded-3xl p-6 shadow-sm hover:shadow-xl transition border border-slate-200 flex flex-col justify-between"
+          >
+            <div>
+              <div className="relative h-48 rounded-2xl overflow-hidden mb-6 bg-slate-100">
+                {homeCafeChair?.image ? (
+                  <Image
+                    src={homeCafeChair.image}
+                    alt={homeCafeChair.imageAlt}
+                    fill
+                    sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
+                    className="object-contain p-4 group-hover:scale-105 transition duration-300"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-slate-300 text-5xl">
+                    <i className="fa-solid fa-chair" />
+                  </div>
+                )}
+              </div>
+              <h3 className="text-xl font-bold text-slate-900 group-hover:text-school-blue transition mb-2">
+                {HOME_CAFE_MENU_ITEM.title}
+              </h3>
+              <p className="text-slate-600 text-sm mb-4">
+                Стулья с пластиковым сиденьем на металлокаркасе — для кухни, кафе, столовой и офиса.
+              </p>
+            </div>
+            <div className="flex items-center text-xs font-semibold text-school-blue gap-1">
+              <span>Смотреть модели</span>
+              <i className="fa-solid fa-chevron-right text-[10px]" />
+            </div>
+          </Link>
+
           {/* Карточка: тендеры. TODO: ссылка на /dlya-shkol, когда появится страница */}
           <div className="group bg-gradient-to-br from-school-blue to-slate-900 text-white rounded-3xl p-6 shadow-lg hover:shadow-xl transition flex flex-col justify-between">
             <div>
@@ -259,6 +298,33 @@ export default async function HomePage() {
             ))}
           </div>
         </div>
+      </section>
+
+      {/* ============ SEO-ТЕКСТ ============ */}
+      <section className="py-16 max-w-4xl mx-auto px-4 sm:px-8 text-sm text-slate-600 leading-relaxed space-y-4">
+        <h2 className="text-2xl font-black text-slate-900">Школьная мебель и стулья в Казахстане</h2>
+        <p>
+          В каталоге {site.name} — <Link href="/catalog/party" className="text-school-blue hover:underline">школьные парты</Link>{" "}
+          одноместные и двухместные,{" "}
+          <Link href="/catalog/stulya" className="text-school-blue hover:underline">школьные стулья</Link>,{" "}
+          <Link href="/catalog/party-dlya-himii-i-fiziki" className="text-school-blue hover:underline">
+            парты для кабинетов химии и физики
+          </Link>{" "}
+          и <Link href="/catalog/spec-mebel" className="text-school-blue hover:underline">спецмебель</Link> для
+          актовых залов и учительских. Парты и стулья подбирают по ростовым группам учеников, чтобы
+          высота стола и сиденья подходила к росту ребёнка.
+        </p>
+        <p>
+          Стулья с пластиковым сиденьем на металлическом каркасе подходят не только для школы:{" "}
+          <Link href={HOME_CAFE_MENU_ITEM.href} className="text-school-blue hover:underline">
+            пластиковые стулья для дома, кафе и офиса
+          </Link>{" "}
+          легко моются и выдерживают ежедневную нагрузку.
+        </p>
+        <p>
+          Добавьте товары в смету — мы рассчитаем стоимость комплекта для класса, школы или зала кафе
+          и организуем доставку по Казахстану.
+        </p>
       </section>
     </>
   );

@@ -18,3 +18,6 @@ export function paragraphs(text: string): string[] {
     .map((s) => s.trim())
     .filter(Boolean);
 }
+/** Дата для статей: «12 марта 2026 г.» */
+export const formatDate = (iso: string) =>
+  new Date(iso).toLocaleDateString("ru-RU", { day: "numeric", month: "long", year: "numeric" });

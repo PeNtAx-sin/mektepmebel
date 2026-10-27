@@ -7,7 +7,7 @@ import { useState } from "react";
 
 import { site, type MenuItem } from "@/lib/site";
 
-export default function Header({ catalogMenu }: { catalogMenu: MenuItem[] }) {
+export default function Header({ catalogMenu, showBlog }: { catalogMenu: MenuItem[]; showBlog: boolean }) {
   const [open, setOpen] = useState(false);
   const { count: cartCount } = useCart();
   const closeMenu = () => setOpen(false);
@@ -74,6 +74,12 @@ export default function Header({ catalogMenu }: { catalogMenu: MenuItem[] }) {
                 </div>
               )}
             </div>
+
+            {showBlog && (
+              <Link href="/blog" className="hover:text-school-blue transition py-2">
+                Статьи
+              </Link>
+            )}
           </nav>
 
           {/* Кнопки справа */}
@@ -159,6 +165,15 @@ export default function Header({ catalogMenu }: { catalogMenu: MenuItem[] }) {
                 </div>
               ))}
             </div>
+          )}
+          {showBlog && (
+            <Link
+              href="/blog"
+              onClick={closeMenu}
+              className="block w-full text-left font-medium py-1.5 text-slate-700 hover:text-school-blue"
+            >
+              Статьи
+            </Link>
           )}
 
           <div className="pt-3 border-t border-slate-100 space-y-2">

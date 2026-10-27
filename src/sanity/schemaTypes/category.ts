@@ -79,14 +79,14 @@ export default defineType({
       name: "seoTitle",
       title: "SEO: заголовок (title)",
       type: "string",
-      validation: (rule) => rule.max(70).warning("Лучше не длиннее 60–70 символов"),
+      validation: (rule) => rule.max(45).warning("Длиннее 45 символов — вместе с « | Mektep Mebel» поисковик обрежет"),
     }),
     defineField({
       name: "seoDescription",
       title: "SEO: описание (description)",
       type: "text",
       rows: 3,
-      validation: (rule) => rule.max(170).warning("Лучше не длиннее 150–160 символов"),
+      validation: (rule) => rule.max(160).warning("Длиннее 160 символов — поисковик обрежет"),
     }),
   ],
   orderings: [

@@ -73,6 +73,15 @@ export default defineType({
       initialValue: true,
     }),
     defineField({
+      name: "forHomeCafe",
+      title: "Подходит для дома, кафе и офиса",
+      type: "boolean",
+      group: "main",
+      description:
+        "Товар попадёт на страницу «Пластиковые стулья для дома и кафе» (/plastikovye-stulya). Пока ни один не отмечен, там показываются все стулья, кроме кресел.",
+      initialValue: false,
+    }),
+    defineField({
       name: "featured",
       title: "Показать на главной (большая карточка)",
       type: "boolean",
@@ -163,8 +172,8 @@ export default defineType({
       title: "SEO: заголовок (title)",
       type: "string",
       group: "seo",
-      description: "Пусто — «<Название> — купить».",
-      validation: (rule) => rule.max(70).warning("Лучше не длиннее 60–70 символов"),
+      description: "Пусто — «<Название> — купить» (если влезает в 45 символов, иначе просто название).",
+      validation: (rule) => rule.max(45).warning("Длиннее 45 символов — вместе с « | Mektep Mebel» поисковик обрежет"),
     }),
     defineField({
       name: "seoDescription",
@@ -173,7 +182,7 @@ export default defineType({
       group: "seo",
       rows: 3,
       description: "Пусто — берётся краткое описание.",
-      validation: (rule) => rule.max(170).warning("Лучше не длиннее 150–160 символов"),
+      validation: (rule) => rule.max(160).warning("Длиннее 160 символов — поисковик обрежет"),
     }),
     // Старое поле: данные остались у товаров, на сайте используется, только если
     // не выбрана «Категория». В форме не показываем.

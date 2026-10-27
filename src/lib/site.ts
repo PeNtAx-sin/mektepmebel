@@ -8,6 +8,17 @@ export const site = {
   email: "info@mektepmebel.kz",
   address: "г. Алматы, пр. Аль-Фараби 17/1",
   whatsapp: "77010000000",
+  // Микроразметка LocalBusiness (адрес, телефон для карт и поиска) выводится,
+  // только когда контакты выше проверены. TODO: проверить и поставить true.
+  contactsVerified: false,
+  city: "Алматы",
+  streetAddress: "пр. Аль-Фараби 17/1",
+  // TODO: часы работы, например ["Mo-Fr 09:00-18:00", "Sa 10:00-15:00"]
+  openingHours: [] as string[],
+  // TODO: ссылки на Instagram, 2ГИС, Google Maps — для sameAs в микроразметке
+  sameAs: [] as string[],
+  // Ключ IndexNow (Яндекс, Bing): публичный, отдаётся по адресу /<ключ>.txt
+  indexNowKey: "92273c8e4029737b2b2f364ace5504fa",
 };
 
 export type MenuItem = { title: string; href: string; children?: MenuItem[] };

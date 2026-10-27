@@ -117,7 +117,7 @@ export default function TenderModal() {
             <a
               href={waUrl}
               target="_blank"
-              rel="noopener noreferrer"
+              rel="nofollow noopener noreferrer"
               className="inline-flex items-center gap-2 bg-brand-500 hover:bg-brand-600 text-white font-bold px-6 py-3 rounded-xl shadow transition text-sm"
             >
               <i className="fa-brands fa-whatsapp" /> Открыть WhatsApp ещё раз
