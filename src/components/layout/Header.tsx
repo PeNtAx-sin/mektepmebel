@@ -105,7 +105,8 @@ export default function Header({ catalogMenu, showBlog }: { catalogMenu: MenuIte
               смету
             </button>
 
-            <Link
+            {/* обычная ссылка, не Link: Link заранее загружает /admin, и браузер спрашивает пароль на любой странице */}
+            <a
               href="/admin"
               rel="nofollow"
               title="Админ-панель"
@@ -113,7 +114,7 @@ export default function Header({ catalogMenu, showBlog }: { catalogMenu: MenuIte
               className="hidden sm:inline-flex items-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-800 px-3 py-2.5 rounded-xl text-xs font-semibold transition"
             >
               <i className="fa-solid fa-lock text-slate-600" />
-            </Link>
+            </a>
 
             <button
               type="button"
@@ -187,14 +188,14 @@ export default function Header({ catalogMenu, showBlog }: { catalogMenu: MenuIte
             >
               Запросить смету для школы
             </button>
-            <Link
+            <a
               href="/admin"
               rel="nofollow"
               onClick={closeMenu}
               className="block text-center w-full bg-slate-100 text-slate-800 py-3 rounded-xl font-semibold text-sm"
             >
               Панель администратора
-            </Link>
+            </a>
           </div>
         </div>
       )}

@@ -73,9 +73,9 @@ export default function Footer({ catalogMenu, showBlog }: { catalogMenu: MenuIte
       <div className="max-w-7xl mx-auto px-4 sm:px-8 border-t border-slate-800 pt-8 flex flex-col sm:flex-row justify-between items-center text-xs text-slate-500">
         <p>© {year} {site.name}. Все права защищены.</p>
         <div className="flex gap-4 mt-4 sm:mt-0">
-          <Link href="/admin" rel="nofollow" className="hover:text-white">
+          <a href="/admin" rel="nofollow" className="hover:text-white">
             Панель управления (CRM)
-          </Link>
+          </a>
         </div>
       </div>
     </footer>
