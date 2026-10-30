@@ -146,9 +146,9 @@ export default function CalculatorModal() {
         type="button"
         onClick={() => setIsOpen(true)}
         aria-label="Открыть калькулятор комплектующих"
-        className="fixed bottom-6 right-6 z-[60] group flex items-center gap-3 bg-slate-900 hover:bg-slate-800 text-white p-2 md:pr-5 rounded-full shadow-2xl border border-slate-700 transition"
+        className="fixed bottom-4 right-4 md:bottom-6 md:right-6 z-[60] group flex items-center gap-3 bg-slate-900 hover:bg-slate-800 text-white p-1.5 md:p-2 md:pr-5 rounded-full shadow-2xl border border-slate-700 transition"
       >
-        <span className="w-12 h-12 rounded-full bg-brand-500 group-hover:bg-brand-600 flex items-center justify-center text-xl transition">
+        <span className="w-11 h-11 md:w-12 md:h-12 rounded-full bg-brand-500 group-hover:bg-brand-600 flex items-center justify-center text-xl transition">
           <i className="fa-solid fa-calculator" />
         </span>
         <span className="hidden md:block text-left leading-tight">

@@ -5,9 +5,9 @@ export const site = {
   // TODO: заменить реальными контактами
   phone: "+7 (747) 17-19-253",
   phoneHref: "tel:+77471719253",
-  email: "info@mektepmebel.kz",
-  address: "г. Алматы, пр. Аль-Фараби 17/1",
-  whatsapp: "77010000000",
+  email: "pentaxsin@icloud.com",
+  address: "г. Алматы, пр. Уссурийская 44",
+  whatsapp: "77471719253",
   // Микроразметка LocalBusiness (адрес, телефон для карт и поиска) выводится,
   // только когда контакты выше проверены. TODO: проверить и поставить true.
   contactsVerified: false,

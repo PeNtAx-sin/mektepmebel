@@ -1,5 +1,12 @@
 import type { MetadataRoute } from "next";
-import { getAllCategories, getArticles, getHomeCafeChairs, getProducts, HOME_CAFE_MENU_ITEM } from "@/lib/data";
+import {
+  categorySlugsFor,
+  getAllCategories,
+  getArticles,
+  getHomeCafeChairs,
+  getProducts,
+  HOME_CAFE_MENU_ITEM,
+} from "@/lib/data";
 import { absoluteUrl } from "@/lib/seo";
 
 export const revalidate = 3600; // карта обновляется раз в час
@@ -17,10 +24,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   ]);
 
   const productDates = products.map((p) => p.updatedAt);
-  const parentOf = new Map(categories.map((c) => [c.slug, c.parentSlug]));
-  // товар подкатегории обновляет и дату родительской категории
-  const inCategory = (slug: string) =>
-    products.filter((p) => p.categorySlug === slug || parentOf.get(p.categorySlug) === slug);
+  // товар подкатегории обновляет и дату родительской категории (и общего раздела)
+  const inCategory = (slug: string) => {
+    const slugs = categorySlugsFor(slug, categories);
+    return products.filter((p) => slugs.includes(p.categorySlug));
+  };
 
   const entries: MetadataRoute.Sitemap = [
     { url: absoluteUrl("/"), lastModified: latest(productDates), changeFrequency: "weekly", priority: 1 },

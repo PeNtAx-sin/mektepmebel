@@ -3,6 +3,7 @@ import { client } from "@/sanity/lib/client";
 import { urlFor } from "@/sanity/lib/image";
 import type { SanityImageObject } from "@sanity/image-url/lib/types/types";
 import type { MenuItem } from "@/lib/site";
+import { productDefaults } from "@/lib/product-specs";
 
 export type Spec = { label: string; value: string };
 export type Faq = { question: string; answer: string };
@@ -116,6 +117,46 @@ export async function getCategoryBySlug(slug: string): Promise<Category | null> 
   return all.find((c) => c.slug === slug) ?? null;
 }
 
+export type CategoryCover = { src: string; alt: string; fromProduct: boolean };
+
+/**
+ * Картинка для карточек категорий: своя из Studio, а если её нет — фото первого
+ * товара категории (вместе с подкатегориями). У пустой категории — фото первого
+ * товара каталога, чтобы карточка не была пустой.
+ */
+export async function getCategoryCovers(): Promise<Map<string, CategoryCover>> {
+  const [categories, products] = await Promise.all([getAllCategories(), getProducts()]);
+  const withImage = products.filter((p) => p.image);
+  const covers = new Map<string, CategoryCover>();
+  const used = new Set<string>();
+  const empty: typeof categories = [];
+  for (const c of categories) {
+    if (c.image) {
+      covers.set(c.slug, { src: c.image, alt: c.title, fromProduct: false });
+      continue;
+    }
+    const slugs = categorySlugsFor(c.slug, categories);
+    // общему разделу — фото, которого ещё нет у входящих в него категорий
+    const product = AGGREGATE_CATEGORIES[c.slug]
+      ? undefined
+      : withImage.find((p) => slugs.includes(p.categorySlug));
+    if (!product?.image) {
+      empty.push(c);
+      continue;
+    }
+    used.add(product.image);
+    covers.set(c.slug, { src: product.image, alt: `${c.title}: ${product.imageAlt}`, fromProduct: true });
+  }
+  // пустым категориям и общим разделам — фото, которого ещё нет на соседних карточках
+  for (const c of empty) {
+    const product = withImage.find((p) => !used.has(p.image!)) ?? withImage[0];
+    if (!product?.image) continue;
+    used.add(product.image);
+    covers.set(c.slug, { src: product.image, alt: `${c.title}: ${product.imageAlt}`, fromProduct: true });
+  }
+  return covers;
+}
+
 /* ---------- товары ---------- */
 
 type RawProduct = Omit<Product, "image" | "imageAlt" | "gallery"> & {
@@ -157,9 +198,14 @@ const PRODUCT_PROJECTION = `{
 }`;
 
 function mapProduct(p: RawProduct): Product {
+  // пустые поля из Studio заполняем типовыми характеристиками модели
+  const defaults = productDefaults(p);
   return {
     ...p,
     title: p.title.trim(),
+    shortDescription: p.shortDescription.trim() || defaults?.shortDescription || "",
+    description: p.description?.trim() || defaults?.description || null,
+    specs: p.specs.some((s) => s.label && s.value) ? p.specs : (defaults?.specs ?? []),
     image: imageUrl(p.image),
     imageAlt: p.imageAlt?.trim() || p.title.trim(),
     gallery: p.gallery.map(imageUrl).filter((url): url is string => url !== null),
@@ -173,10 +219,24 @@ export async function getProducts(): Promise<Product[]> {
   return rows.map(mapProduct);
 }
 
-/** Товары категории вместе с товарами её подкатегорий */
+/**
+ * Общие разделы: показывают товары нескольких категорий сразу.
+ * «Школьная мебель» собирает всё для школы; сами товары остаются в своих категориях.
+ */
+export const AGGREGATE_CATEGORIES: Record<string, string[]> = {
+  "shkolnaya-mebel": ["party", "stulya", "party-dlya-himii-i-fiziki", "spec-mebel"],
+};
+
+/** Категории, чьи товары показываются на странице категории: она сама, подкатегории, а у общего раздела — его состав */
+export function categorySlugsFor(slug: string, all: Category[]): string[] {
+  const roots = [slug, ...(AGGREGATE_CATEGORIES[slug] ?? [])];
+  return [...new Set([...roots, ...all.filter((c) => c.parentSlug && roots.includes(c.parentSlug)).map((c) => c.slug)])];
+}
+
+/** Товары категории вместе с товарами её подкатегорий (у общего раздела — всех входящих категорий) */
 export async function getProductsByCategory(slug: string): Promise<Product[]> {
   const all = await getAllCategories();
-  const slugs = [slug, ...all.filter((c) => c.parentSlug === slug).map((c) => c.slug)];
+  const slugs = categorySlugsFor(slug, all);
   const rows = await fetchGroq<RawProduct[]>(
     `${PRODUCT_BASE} ${PRODUCT_ORDER} ${PRODUCT_PROJECTION}[defined(categorySlug) && categorySlug in $slugs]`,
     { slugs },
@@ -392,7 +452,7 @@ export async function getRoomShowcase(): Promise<RoomShowcase | null> {
       | null;
   } | null>(`
     *[_id == "homePage"][0]{
-      "title": roomsTitle,
+      "title": coalesce(roomsTitle, "Наши проекты"),
       "rooms": rooms[]{
         "key": _key,
         label,

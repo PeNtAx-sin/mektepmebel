@@ -12,7 +12,7 @@ export default function SearchForm({ defaultValue = "", autoFocus = false }: { d
         defaultValue={defaultValue}
         autoFocus={autoFocus}
         placeholder="Поиск: парта, стул…"
-        className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 pl-4 pr-10 text-sm text-slate-800 outline-none focus:border-school-blue focus:bg-white"
+        className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 pl-4 pr-10 text-base sm:text-sm text-slate-800 outline-none focus:border-school-blue focus:bg-white"
       />
       <button
         type="submit"

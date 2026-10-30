@@ -1,16 +1,20 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import ProductCarousel from "@/components/home/ProductCarousel";
 import ProjectsSection from "@/components/home/ProjectsSection";
 import RoomShowcase from "@/components/home/RoomShowcase";
 import OpenTenderButton from "@/components/OpenTenderButton";
 import {
   getCategories,
+  getCategoryCovers,
   getFeaturedProduct,
   getHomeCafeChairs,
+  getProducts,
   HOME_CAFE_MENU_ITEM,
   getProductsCount,
   getProjects,
   getRoomShowcase,
+  type Product,
 } from "@/lib/data";
 import Image from "next/image";
 import { formatPrice, vatLabel } from "@/lib/format";
@@ -27,8 +31,8 @@ export const metadata: Metadata = pageMetadata({
 
 // TODO: заменить реальными данными компании
 const trustBadges = [
-  { icon: "fa-check-circle", text: "Гарантия от 3 до 5 лет" },
-  { icon: "fa-truck-fast", text: "Доставка по всему РК" },
+  { icon: "fa-check-circle", text: "Качество с завода" },
+  { icon: "fa-truck-fast", text: "Работаем по всему Казахстану" },
   { icon: "fa-file-contract", text: "Полный пакет документов" },
 ];
 
@@ -37,13 +41,13 @@ const advantages = [
   {
     icon: "fa-certificate",
     iconBox: "bg-brand-50 text-brand-600",
-    title: "ГОСТ и СанПиН",
+    title: "ГОСТ РК",
     text: "Вся продукция строго соответствует требованиям безопасности учебных заведений Республики Казахстан.",
   },
   {
     icon: "fa-warehouse",
     iconBox: "bg-blue-50 text-school-blue",
-    title: "Склады в Алматы и Астане",
+    title: "Склады в Алматы",
     text: "Крупнейший складской запас в наличии. Отгружаем заказы любого объема в день подтверждения.",
   },
   {
@@ -54,14 +58,30 @@ const advantages = [
   },
 ];
 
+// «Парта школьная двухместная Синяя» и «… Желтая» — одна модель: в ленте показываем одну
+const COLOR_SUFFIX = /\s+(темно[\s-]?)?(син|зел[её]н|ж[её]лт|оранжев|сер|красн|бел|черн|голуб)\S*$/i;
+
+function carouselProducts(products: Product[]): Product[] {
+  const seen = new Set<string>();
+  return products.filter((p) => {
+    const model = p.title.replace(COLOR_SUFFIX, "").toLowerCase();
+    if (!p.image || seen.has(model)) return false;
+    seen.add(model);
+    return true;
+  });
+}
+
 export default async function HomePage() {
-  const [categories, showcase, projects, productsCount, homeCafeChairs] = await Promise.all([
+  const [categories, showcase, projects, productsCount, homeCafeChairs, covers, products] = await Promise.all([
     getCategories(),
     getRoomShowcase(),
     getProjects(),
     getProductsCount(),
     getHomeCafeChairs(),
+    getCategoryCovers(),
+    getProducts(),
   ]);
+  const carousel = carouselProducts(products);
   const homeCafeChair = homeCafeChairs.find((p) => p.image);
   // пока в Studio нет 3D-кабинетов, на первом экране — карточка товара
   const featured = showcase ? null : await getFeaturedProduct();
@@ -102,10 +122,10 @@ export default async function HomePage() {
               </OpenTenderButton>
             </div>
 
-            <div className="grid grid-cols-3 gap-4 pt-8 border-t border-slate-800 text-slate-300 text-xs sm:text-sm">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 pt-8 border-t border-slate-800 text-slate-300 text-sm">
               {trustBadges.map((b) => (
                 <div key={b.text} className="flex items-center gap-2">
-                  <i className={`fa-solid ${b.icon} text-brand-400 text-lg`} />
+                  <i className={`fa-solid ${b.icon} text-brand-400 text-lg w-6 text-center shrink-0`} />
                   <span>{b.text}</span>
                 </div>
               ))}
@@ -157,6 +177,29 @@ export default async function HomePage() {
         </div>
       </section>
 
+      {/* ============ ТОВАРЫ: КАРУСЕЛЬ ============ */}
+      {carousel.length > 0 && (
+        <section className="py-16 bg-slate-50 border-b border-slate-200">
+          <div className="max-w-7xl mx-auto px-4 sm:px-8">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 mb-8">
+              <div>
+                <span className="text-brand-600 font-bold text-xs uppercase tracking-wider block mb-2">
+                  Каталог
+                </span>
+                <h2 className="text-3xl sm:text-4xl font-black text-slate-900">Товары для школы</h2>
+              </div>
+              <Link
+                href="/catalog"
+                className="text-school-blue font-bold text-sm hover:underline flex items-center gap-2"
+              >
+                Весь каталог <i className="fa-solid fa-arrow-right" />
+              </Link>
+            </div>
+            <ProductCarousel products={carousel} />
+          </div>
+        </section>
+      )}
+
       {/* ============ ГОТОВЫЕ ПРОЕКТЫ ============ */}
       {projects.length > 0 && <ProjectsSection projects={projects} />}
 
@@ -188,14 +231,15 @@ export default async function HomePage() {
               className="group bg-white rounded-3xl p-6 shadow-sm hover:shadow-xl transition border border-slate-200 flex flex-col justify-between"
             >
               <div>
-                <div className="relative h-48 rounded-2xl overflow-hidden mb-6 bg-slate-100">
-                  {c.image ? (
+                <div className={`relative h-48 rounded-2xl overflow-hidden mb-6 ${covers.get(c.slug)?.fromProduct ? "bg-white" : "bg-slate-100"}`}>
+                  {covers.get(c.slug) ? (
                     <Image
-                      src={c.image}
-                      alt={c.title}
+                      src={covers.get(c.slug)!.src}
+                      alt={covers.get(c.slug)!.alt}
                       fill
                       sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
-                      className="object-cover group-hover:scale-105 transition duration-300"
+                      // фото товара на белом фоне — целиком, своя картинка категории — на всю карточку
+                      className={`${covers.get(c.slug)!.fromProduct ? "object-contain p-4" : "object-cover"} group-hover:scale-105 transition duration-300`}
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center text-slate-300 text-5xl">
@@ -221,7 +265,7 @@ export default async function HomePage() {
             className="group bg-white rounded-3xl p-6 shadow-sm hover:shadow-xl transition border border-slate-200 flex flex-col justify-between"
           >
             <div>
-              <div className="relative h-48 rounded-2xl overflow-hidden mb-6 bg-slate-100">
+              <div className="relative h-48 rounded-2xl overflow-hidden mb-6 bg-white">
                 {homeCafeChair?.image ? (
                   <Image
                     src={homeCafeChair.image}

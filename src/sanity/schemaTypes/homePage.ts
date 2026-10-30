@@ -11,7 +11,7 @@ export default defineType({
       name: "roomsTitle",
       title: "Заголовок над 3D-кабинетами",
       type: "string",
-      initialValue: "Реализованные проекты по всему Казахстану",
+      initialValue: "Наши проекты",
     }),
     defineField({
       name: "rooms",

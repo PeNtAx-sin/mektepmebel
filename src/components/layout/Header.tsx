@@ -18,17 +18,17 @@ export default function Header({ catalogMenu, showBlog }: { catalogMenu: MenuIte
   return (
     <header className="bg-white sticky top-0 z-40 shadow-sm border-b border-slate-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-8">
-        <div className="flex items-center justify-between h-20">
+        <div className="flex items-center justify-between h-16 sm:h-20">
           {/* Логотип */}
           <Link href="/" className="flex items-center gap-3" onClick={closeMenu}>
-            <div className="w-11 h-11 bg-school-blue rounded-xl flex items-center justify-center text-white shadow-md">
+            <div className="w-10 h-10 sm:w-11 sm:h-11 shrink-0 bg-school-blue rounded-xl flex items-center justify-center text-white shadow-md">
               <i className="fa-solid fa-graduation-cap text-xl" />
             </div>
             <div>
-              <span className="text-xl font-black tracking-tight text-slate-900 block leading-tight uppercase">
+              <span className="text-lg sm:text-xl font-black tracking-tight text-slate-900 block leading-tight uppercase">
                 {site.name}
               </span>
-              <span className="text-[11px] font-medium text-slate-500 tracking-wider uppercase">
+              <span className="hidden min-[400px]:block text-[11px] font-medium text-slate-500 tracking-wider uppercase whitespace-nowrap">
                 {site.tagline}
               </span>
             </div>

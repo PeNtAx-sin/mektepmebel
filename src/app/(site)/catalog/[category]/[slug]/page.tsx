@@ -16,6 +16,7 @@ import {
   HOME_CAFE_MENU_ITEM,
 } from "@/lib/data";
 import { formatPrice, paragraphs, vatLabel } from "@/lib/format";
+import { productDefaults } from "@/lib/product-specs";
 import { imageObject, ORGANIZATION_ID } from "@/lib/schema";
 import { fitTitle, pageMetadata } from "@/lib/seo";
 import { site } from "@/lib/site";
@@ -108,6 +109,9 @@ export default async function ProductPage({ params }: Props) {
   const waText = `Здравствуйте! Интересует: ${product.title}\n${url}`;
   const waHref = `https://wa.me/${site.whatsapp}?text=${encodeURIComponent(waText)}`;
 
+  const defaults = productDefaults(product);
+  const mm = (value: number) => ({ "@type": "QuantitativeValue", value, unitCode: "MMT" });
+
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "Product",
@@ -117,6 +121,16 @@ export default async function ProductPage({ params }: Props) {
     image: images.length > 0 ? images.map((src) => imageObject(src, product.imageAlt)) : undefined,
     category: category?.title,
     url,
+    material: defaults?.material,
+    ...(defaults?.size && {
+      width: mm(defaults.size.width),
+      depth: mm(defaults.size.depth),
+      height: mm(defaults.size.height),
+    }),
+    additionalProperty:
+      specs.length > 0
+        ? specs.map((s) => ({ "@type": "PropertyValue", name: s.label, value: s.value }))
+        : undefined,
     ...(product.price != null && {
       offers: {
         "@type": "Offer",
@@ -163,7 +177,7 @@ export default async function ProductPage({ params }: Props) {
               {category && (
                 <Link
                   href={`/catalog/${category.slug}`}
-                  className="text-xs text-school-blue hover:underline mt-2 inline-block"
+                  className="text-sm sm:text-xs text-school-blue hover:underline mt-1 py-1.5 inline-block"
                 >
                   Все товары категории «{category.title}»
                 </Link>

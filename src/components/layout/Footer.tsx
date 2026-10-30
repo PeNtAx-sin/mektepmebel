@@ -5,7 +5,7 @@ export default function Footer({ catalogMenu, showBlog }: { catalogMenu: MenuIte
   const year = new Date().getFullYear();
 
   return (
-    <footer className="bg-slate-900 text-slate-400 py-12 border-t border-slate-800">
+    <footer className="bg-slate-900 text-slate-400 pt-12 pb-24 md:pb-12 border-t border-slate-800">
       <div className="max-w-7xl mx-auto px-4 sm:px-8 grid grid-cols-1 md:grid-cols-3 gap-8 text-sm mb-12">
         <div className="space-y-4">
           <div className="flex items-center gap-3">

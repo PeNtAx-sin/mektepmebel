@@ -96,7 +96,7 @@ export default function RoomShowcase({
   return (
     <div className="space-y-4">
       {showcase.title && (
-        <h2 className="text-center font-serif text-2xl sm:text-3xl lg:text-4xl leading-tight text-white">
+        <h2 className="text-center font-black text-2xl sm:text-3xl lg:text-4xl leading-tight text-white">
           {showcase.title}
         </h2>
       )}

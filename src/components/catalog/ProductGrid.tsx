@@ -38,7 +38,7 @@ export function GridToolbar({
         <select
           value={sort}
           onChange={(e) => onSort(e.target.value as SortMode)}
-          className="bg-white border border-slate-200 text-xs rounded-xl px-3 py-2 text-slate-700 focus:outline-none focus:border-school-blue"
+          className="bg-white border border-slate-200 text-base sm:text-xs rounded-xl px-3 py-2 text-slate-700 focus:outline-none focus:border-school-blue"
         >
           <option value="popular">По умолчанию</option>
           <option value="asc">Сначала дешевле</option>

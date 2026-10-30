@@ -8,8 +8,10 @@ import JsonLd from "@/components/JsonLd";
 import FaqSection from "@/components/seo/FaqSection";
 import RelatedLinks from "@/components/seo/RelatedLinks";
 import {
+  AGGREGATE_CATEGORIES,
   getAllCategories,
   getCategoryBySlug,
+  getCategoryCovers,
   getProductsByCategory,
 } from "@/lib/data";
 import { paragraphs } from "@/lib/format";
@@ -29,7 +31,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const category = await getCategoryBySlug(slug);
   if (!category) return {};
 
-  const products = await getProductsByCategory(slug);
+  const [products, covers] = await Promise.all([getProductsByCategory(slug), getCategoryCovers()]);
 
   const defaults = categorySeo[slug];
 
@@ -40,7 +42,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       defaults?.seoDescription ??
       `${category.title}: цены, характеристики и доставка по Казахстану. Запросите смету.`,
     path: `/catalog/${slug}`,
-    image: category.image,
+    image: covers.get(slug)?.src,
     // пустые категории не показываем в поиске
     noindex: products.length === 0,
   });
@@ -59,7 +61,9 @@ export default async function CategoryPage({ params }: Props) {
   const parent = category.parentSlug
     ? categories.find((c) => c.slug === category.parentSlug)
     : undefined;
-  const children = categories.filter((c) => c.parentSlug === slug);
+  // ссылки-«чипсы» над товарами: подкатегории, а у общего раздела — входящие в него категории
+  const included = AGGREGATE_CATEGORIES[slug] ?? [];
+  const children = categories.filter((c) => c.parentSlug === slug || included.includes(c.slug));
   // тексты из Studio, а если поле пустое — по умолчанию из lib/seo-content.ts
   const defaults = categorySeo[slug];
   const intro = category.intro ?? defaults?.intro;
@@ -96,12 +100,12 @@ export default async function CategoryPage({ params }: Props) {
             </div>
 
             {children.length > 0 && (
-              <div className="flex flex-wrap gap-2 mb-6">
+              <div className="flex gap-2 mb-6 overflow-x-auto [scrollbar-width:none] -mx-4 px-4 sm:mx-0 sm:px-0 sm:flex-wrap">
                 {children.map((c) => (
                   <Link
                     key={c.slug}
                     href={`/catalog/${c.slug}`}
-                    className="bg-white border border-slate-200 hover:border-school-blue hover:text-school-blue px-4 py-2 rounded-xl text-sm font-medium transition"
+                    className="shrink-0 bg-white border border-slate-200 hover:border-school-blue hover:text-school-blue px-4 py-2 rounded-xl text-sm font-medium transition"
                   >
                     {c.title}
                   </Link>
