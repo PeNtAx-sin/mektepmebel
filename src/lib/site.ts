@@ -12,7 +12,7 @@ export const site = {
   // только когда контакты выше проверены. TODO: проверить и поставить true.
   contactsVerified: false,
   city: "Алматы",
-  streetAddress: "пр. Аль-Фараби 17/1",
+  streetAddress: "пр. Уссурийская 44",
   // TODO: часы работы, например ["Mo-Fr 09:00-18:00", "Sa 10:00-15:00"]
   openingHours: [] as string[],
   // TODO: ссылки на Instagram, 2ГИС, Google Maps — для sameAs в микроразметке
