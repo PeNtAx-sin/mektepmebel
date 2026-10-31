@@ -234,6 +234,24 @@ export function categorySlugsFor(slug: string, all: Category[]): string[] {
 }
 
 /** Товары категории вместе с товарами её подкатегорий (у общего раздела — всех входящих категорий) */
+export type CatalogSection = { slug: string; title: string; products: Product[] };
+
+/**
+ * Разделы каталога — основные категории по порядку из Sanity; товары подкатегорий
+ * идут в разделе родителя. Пустые разделы не показываем. only — ограничить список разделов.
+ */
+export function catalogSections(categories: Category[], products: Product[], only?: string[]): CatalogSection[] {
+  const parentOf = new Map(categories.map((c) => [c.slug, c.parentSlug ?? c.slug]));
+  return categories
+    .filter((c) => !c.parentSlug && (!only || only.includes(c.slug)))
+    .map((c) => ({
+      slug: c.slug,
+      title: c.title,
+      products: products.filter((p) => parentOf.get(p.categorySlug) === c.slug),
+    }))
+    .filter((s) => s.products.length > 0);
+}
+
 export async function getProductsByCategory(slug: string): Promise<Product[]> {
   const all = await getAllCategories();
   const slugs = categorySlugsFor(slug, all);

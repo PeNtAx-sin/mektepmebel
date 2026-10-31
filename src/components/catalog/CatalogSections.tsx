@@ -2,17 +2,11 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import type { Product } from "@/lib/data";
+import type { CatalogSection } from "@/lib/data";
 import { plural } from "@/lib/format";
 import { GridToolbar, ProductCards, sortProducts, type SortMode } from "./ProductGrid";
 
-export type CatalogSection = {
-  slug: string;
-  title: string;
-  products: Product[];
-};
-
-/** Общий каталог: товары разделами по категориям, сортировка — внутри каждого раздела */
+/** Общий каталог и общие разделы: товары разделами по категориям, сортировка — внутри каждого раздела */
 export default function CatalogSections({ sections }: { sections: CatalogSection[] }) {
   const [sort, setSort] = useState<SortMode>("popular");
   const total = sections.reduce((n, s) => n + s.products.length, 0);

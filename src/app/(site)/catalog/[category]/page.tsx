@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import Breadcrumbs, { type Crumb } from "@/components/catalog/Breadcrumbs";
+import CatalogSections from "@/components/catalog/CatalogSections";
 import CatalogSidebar from "@/components/catalog/CatalogSidebar";
 import ProductGrid from "@/components/catalog/ProductGrid";
 import JsonLd from "@/components/JsonLd";
@@ -9,6 +10,7 @@ import FaqSection from "@/components/seo/FaqSection";
 import RelatedLinks from "@/components/seo/RelatedLinks";
 import {
   AGGREGATE_CATEGORIES,
+  catalogSections,
   getAllCategories,
   getCategoryBySlug,
   getCategoryCovers,
@@ -61,9 +63,10 @@ export default async function CategoryPage({ params }: Props) {
   const parent = category.parentSlug
     ? categories.find((c) => c.slug === category.parentSlug)
     : undefined;
-  // ссылки-«чипсы» над товарами: подкатегории, а у общего раздела — входящие в него категории
-  const included = AGGREGATE_CATEGORIES[slug] ?? [];
-  const children = categories.filter((c) => c.parentSlug === slug || included.includes(c.slug));
+  const children = categories.filter((c) => c.parentSlug === slug);
+  // общий раздел показываем как общий каталог: товары разделами по входящим категориям
+  const included = AGGREGATE_CATEGORIES[slug];
+  const sections = included ? catalogSections(categories, products, [slug, ...included]) : null;
   // тексты из Studio, а если поле пустое — по умолчанию из lib/seo-content.ts
   const defaults = categorySeo[slug];
   const intro = category.intro ?? defaults?.intro;
@@ -113,7 +116,7 @@ export default async function CategoryPage({ params }: Props) {
               </div>
             )}
 
-            <ProductGrid products={products} />
+            {sections ? <CatalogSections sections={sections} /> : <ProductGrid products={products} />}
 
             {products.length > 0 && <JsonLd data={itemListSchema(category.title, `/catalog/${slug}`, products)} />}
 
