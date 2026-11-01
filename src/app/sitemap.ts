@@ -7,6 +7,7 @@ import {
   getProducts,
   HOME_CAFE_MENU_ITEM,
 } from "@/lib/data";
+import { landingHref, landingPages } from "@/lib/landing-pages";
 import { absoluteUrl } from "@/lib/seo";
 
 export const revalidate = 3600; // карта обновляется раз в час
@@ -50,6 +51,17 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     entries.push({
       url: absoluteUrl(HOME_CAFE_MENU_ITEM.href),
       lastModified: latest(homeCafe.map((p) => p.updatedAt)),
+      changeFrequency: "weekly",
+      priority: 0.8,
+    });
+  }
+
+  for (const l of landingPages) {
+    const items = products.filter(l.products);
+    if (items.length === 0) continue;
+    entries.push({
+      url: absoluteUrl(landingHref(l.slug)),
+      lastModified: latest(items.map((p) => p.updatedAt)),
       changeFrequency: "weekly",
       priority: 0.8,
     });

@@ -42,7 +42,7 @@ export function imageObject(url: string, caption: string) {
  * выводится только после проверки контактов: site.contactsVerified.
  */
 export function siteSchemas() {
-  const logo = `${site.url}/opengraph-image`;
+  const logo = `${site.url}/logo.png`;
   const organization = {
     "@type": site.contactsVerified ? ["Organization", "FurnitureStore"] : "Organization",
     "@id": ORGANIZATION_ID,

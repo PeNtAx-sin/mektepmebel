@@ -5,6 +5,7 @@ import { useCart } from "@/components/cart/CartProvider";
 import Link from "next/link";
 import { useState } from "react";
 
+import { LogoMark, LogoWordmark } from "@/components/layout/Logo";
 import { site, type MenuItem } from "@/lib/site";
 
 export default function Header({ catalogMenu, showBlog }: { catalogMenu: MenuItem[]; showBlog: boolean }) {
@@ -21,13 +22,9 @@ export default function Header({ catalogMenu, showBlog }: { catalogMenu: MenuIte
         <div className="flex items-center justify-between h-16 sm:h-20">
           {/* Логотип */}
           <Link href="/" className="flex items-center gap-3" onClick={closeMenu}>
-            <div className="w-10 h-10 sm:w-11 sm:h-11 shrink-0 bg-school-blue rounded-xl flex items-center justify-center text-white shadow-md">
-              <i className="fa-solid fa-graduation-cap text-xl" />
-            </div>
+            <LogoMark className="w-11 h-11 sm:w-12 sm:h-12 shrink-0" />
             <div>
-              <span className="text-lg sm:text-xl font-black tracking-tight text-slate-900 block leading-tight uppercase">
-                {site.name}
-              </span>
+              <LogoWordmark className="h-3.5 sm:h-4 w-auto text-[#24497C] mb-1" />
               <span className="hidden min-[400px]:block text-[11px] font-medium text-slate-500 tracking-wider uppercase whitespace-nowrap">
                 {site.tagline}
               </span>

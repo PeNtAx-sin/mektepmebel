@@ -8,6 +8,12 @@ export function plural(n: number, forms: [string, string, string]): string {
 
 export const formatPrice = (n: number) => `${n.toLocaleString("ru-RU")} ₸`;
 
+/** «Цены от 12 000 ₸» по самому дешёвому товару; null, если цен нет */
+export function priceFromLabel(products: { price: number | null }[]): string | null {
+  const prices = products.map((p) => p.price).filter((n): n is number => n != null);
+  return prices.length > 0 ? `Цены от ${formatPrice(Math.min(...prices))}` : null;
+}
+
 /** Подпись к цене: «с НДС» или «без НДС» — смотря какое поле заполнено в Sanity */
 export const vatLabel = (vatIncluded: boolean) => (vatIncluded ? "с НДС" : "без НДС");
 

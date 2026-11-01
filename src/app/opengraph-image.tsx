@@ -12,7 +12,8 @@ export const contentType = "image/png";
 const font = (name: string) => readFile(join(process.cwd(), "src/assets/fonts", name));
 
 export default async function OpengraphImage() {
-  const [latin400, latin800, cyr400, cyr800] = await Promise.all([
+  const [mark, latin400, latin800, cyr400, cyr800] = await Promise.all([
+    readFile(join(process.cwd(), "public/logo-mark.svg")),
     font("inter-latin-400-normal.woff"),
     font("inter-latin-800-normal.woff"),
     font("inter-cyrillic-400-normal.woff"),
@@ -37,18 +38,17 @@ export default async function OpengraphImage() {
         <div style={{ display: "flex", alignItems: "center", gap: 20 }}>
           <div
             style={{
-              width: 72,
-              height: 72,
-              borderRadius: 18,
-              background: "#10b981",
+              width: 88,
+              height: 88,
+              borderRadius: 20,
+              background: "white",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              fontSize: 40,
-              fontWeight: 800,
             }}
           >
-            M
+            {/* eslint-disable-next-line jsx-a11y/alt-text */}
+            <img src={`data:image/svg+xml;base64,${mark.toString("base64")}`} width={76} height={76} />
           </div>
           <div style={{ fontSize: 36, fontWeight: 800, letterSpacing: 1 }}>{site.name.toUpperCase()}</div>
         </div>

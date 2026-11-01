@@ -9,7 +9,7 @@
 
 import { readFileSync } from "node:fs";
 
-const SITE = "https://mektepmebel.kz";
+const SITE = "https://www.mektepmebel.kz";
 const key = readFileSync(new URL("../src/lib/site.ts", import.meta.url), "utf8").match(
   /indexNowKey:\s*"([^"]+)"/,
 )?.[1];

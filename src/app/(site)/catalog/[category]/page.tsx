@@ -16,7 +16,7 @@ import {
   getCategoryCovers,
   getProductsByCategory,
 } from "@/lib/data";
-import { paragraphs } from "@/lib/format";
+import { paragraphs, priceFromLabel } from "@/lib/format";
 import { itemListSchema } from "@/lib/schema";
 import { fitTitle, pageMetadata } from "@/lib/seo";
 import { categorySeo } from "@/lib/seo-content";
@@ -36,12 +36,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const [products, covers] = await Promise.all([getProductsByCategory(slug), getCategoryCovers()]);
 
   const defaults = categorySeo[slug];
+  const priceFrom = priceFromLabel(products);
 
   return pageMetadata({
     title: fitTitle(category.seoTitle, defaults?.seoTitle, `${category.title} — купить в Казахстане`, category.title),
     description:
       category.seoDescription ??
-      defaults?.seoDescription ??
+      (defaults?.seoDescription && `${priceFrom ? `${priceFrom}. ` : ""}${defaults.seoDescription}`) ??
       `${category.title}: цены, характеристики и доставка по Казахстану. Запросите смету.`,
     path: `/catalog/${slug}`,
     image: covers.get(slug)?.src,
@@ -100,6 +101,9 @@ export default async function CategoryPage({ params }: Props) {
                     {text}
                   </p>
                 ))}
+              {priceFromLabel(products) && (
+                <p className="text-sm font-bold text-slate-900">{priceFromLabel(products)}</p>
+              )}
             </div>
 
             {children.length > 0 && (
@@ -116,7 +120,7 @@ export default async function CategoryPage({ params }: Props) {
               </div>
             )}
 
-            {sections ? <CatalogSections sections={sections} /> : <ProductGrid products={products} />}
+            {sections?.length ? <CatalogSections sections={sections} /> : <ProductGrid products={products} />}
 
             {products.length > 0 && <JsonLd data={itemListSchema(category.title, `/catalog/${slug}`, products)} />}
 

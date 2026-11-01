@@ -1,5 +1,5 @@
 export const site = {
-  url: "https://mektepmebel.kz",
+  url: "https://www.mektepmebel.kz",
   name: "Mektep Mebel",
   tagline: "Школьная мебель в Казахстане",
   // TODO: заменить реальными контактами

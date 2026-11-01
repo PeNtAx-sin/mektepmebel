@@ -225,6 +225,8 @@ export async function getProducts(): Promise<Product[]> {
  */
 export const AGGREGATE_CATEGORIES: Record<string, string[]> = {
   "shkolnaya-mebel": ["party", "stulya", "party-dlya-himii-i-fiziki", "spec-mebel"],
+  // двухместные парты регулируются по высоте: 640–760 мм (lib/product-specs.ts)
+  "reguliruemye-party": ["dvuhmestnye-party"],
 };
 
 /** Категории, чьи товары показываются на странице категории: она сама, подкатегории, а у общего раздела — его состав */

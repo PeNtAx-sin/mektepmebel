@@ -22,10 +22,10 @@ import { pageMetadata } from "@/lib/seo";
 import { site } from "@/lib/site";
 
 export const metadata: Metadata = pageMetadata({
-  title: "Mektep Mebel — школьная мебель и пластиковые стулья",
+  title: "Школьная мебель, парты и стулья в Казахстане | Mektep Mebel",
   absoluteTitle: true,
   description:
-    "Школьные парты и стулья, пластиковые стулья для дома, кафе и офиса, парты для кабинетов химии и физики, спецмебель. Доставка по Казахстану. Запросите смету.",
+    "Школьная мебель в Алматы и по Казахстану: школьные парты и стулья, парты для химии и физики, спецмебель, пластиковые стулья для кафе. Цены и смета для школы.",
   path: "/",
 });
 
@@ -348,7 +348,7 @@ export default async function HomePage() {
       <section className="py-16 max-w-4xl mx-auto px-4 sm:px-8 text-sm text-slate-600 leading-relaxed space-y-4">
         <h2 className="text-2xl font-black text-slate-900">Школьная мебель и стулья в Казахстане</h2>
         <p>
-          В каталоге {site.name} — <Link href="/catalog/party" className="text-school-blue hover:underline">школьные парты</Link>{" "}
+          {site.name} — школьная мебель в Алматы с доставкой по Казахстану. В каталоге — <Link href="/catalog/party" className="text-school-blue hover:underline">школьные парты</Link>{" "}
           одноместные и двухместные,{" "}
           <Link href="/catalog/stulya" className="text-school-blue hover:underline">школьные стулья</Link>,{" "}
           <Link href="/catalog/party-dlya-himii-i-fiziki" className="text-school-blue hover:underline">

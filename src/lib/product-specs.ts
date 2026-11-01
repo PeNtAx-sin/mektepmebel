@@ -74,7 +74,7 @@ const CHAIR_Z: ProductDefaults = {
   material: "Пластик, сталь",
 };
 
-// стул на Z-ножке в Studio пока называется «Стул школьный на 4 ножках Синий»
+// slug стула на Z-ножке остался от старого названия «Стул школьный на 4 ножках Синий»
 const BY_SLUG: Record<string, ProductDefaults> = {
   "stul-shkolnyi-na-4-nozhkakh-sinii": CHAIR_Z,
 };

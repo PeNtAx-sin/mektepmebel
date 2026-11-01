@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { LogoMark, LogoWordmark } from "@/components/layout/Logo";
+import { landingHref, landingPages } from "@/lib/landing-pages";
 import { site, type MenuItem } from "@/lib/site";
 
 export default function Footer({ catalogMenu, showBlog }: { catalogMenu: MenuItem[]; showBlog: boolean }) {
@@ -6,13 +8,11 @@ export default function Footer({ catalogMenu, showBlog }: { catalogMenu: MenuIte
 
   return (
     <footer className="bg-slate-900 text-slate-400 pt-12 pb-24 md:pb-12 border-t border-slate-800">
-      <div className="max-w-7xl mx-auto px-4 sm:px-8 grid grid-cols-1 md:grid-cols-3 gap-8 text-sm mb-12">
+      <div className="max-w-7xl mx-auto px-4 sm:px-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 text-sm mb-12">
         <div className="space-y-4">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 bg-school-blue rounded-xl flex items-center justify-center text-white">
-              <i className="fa-solid fa-graduation-cap" />
-            </div>
-            <span className="text-lg font-black text-white uppercase">{site.name}</span>
+            <LogoMark className="w-10 h-10 shrink-0" />
+            <LogoWordmark className="h-3.5 w-auto text-white" />
           </div>
           <p className="text-xs text-slate-400 leading-relaxed">
             Надежный поставщик школьной мебели в Казахстане. ГОСТ, сертификаты, гарантия и
@@ -42,6 +42,19 @@ export default function Footer({ catalogMenu, showBlog }: { catalogMenu: MenuIte
                 </Link>
               </li>
             )}
+          </ul>
+        </div>
+
+        <div>
+          <h2 className="font-bold text-white mb-4">Подборки</h2>
+          <ul className="space-y-2 text-xs">
+            {landingPages.map((l) => (
+              <li key={l.slug}>
+                <Link href={landingHref(l.slug)} className="hover:text-white transition">
+                  {l.menuTitle}
+                </Link>
+              </li>
+            ))}
           </ul>
         </div>
 
